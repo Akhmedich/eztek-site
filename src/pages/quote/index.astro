@@ -1,0 +1,324 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { BUILDINGS } from '../../data/buildings';
+import { SERVICES } from '../../data/services';
+import { PLANS, ESTIMATE } from '../../data/plans';
+import { company } from '../../data/company';
+import { u, tel } from '../../lib/url';
+
+const PROJECTS = [
+  ['new', 'New installation', 'New construction, gut renovation or a system you do not have yet'],
+  ['upgrade', 'Upgrade or replace', 'Old intercom, analog cameras, outdated network'],
+  ['takeover', 'Take over an existing system', 'Installed by someone else, needs a new service partner'],
+  ['add', 'Add to what we installed', 'More doors, cameras, rooms or users'],
+];
+const TIMES = [['asap', 'As soon as possible'], ['1-3', 'In 1–3 months'], ['3+', 'In 3 months or more'], ['budget', 'Budgeting only for now']];
+const ROLES = ['Owner', 'Property manager', 'Managing agent', 'Board member', 'Superintendent', 'Homeowner', 'Architect or designer', 'General contractor', 'Other'];
+const BOROUGHS = ['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx', 'Outside NYC'];
+const data = {
+  types: Object.fromEntries([...BUILDINGS.map((b) => [b.slug, { name: b.name, services: b.services }]), ['other', { name: 'Something else', services: [] }]]),
+  sys: Object.fromEntries(SERVICES.map((s) => [s.slug, s.short])),
+  plans: Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, p.name])),
+  projects: Object.fromEntries(PROJECTS.map((p) => [p[0], p[1]])),
+  times: Object.fromEntries(TIMES),
+  est: ESTIMATE,
+};
+---
+<Layout title="Get a Quote" description="Tell us about your building and the systems you need. See a typical price range now and book a free site survey in NYC.">
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap">
+    <header class="sec-head" style="margin-bottom:24px">
+      <p class="eyebrow">Free site survey · NYC</p>
+      <h1 style="font-size:clamp(1.9rem,3.6vw,2.7rem)">Get a quote</h1>
+      <p class="muted">Four short steps. We call {company.callback} to confirm a survey time, then send a line-item proposal {company.proposalDays} business days after the visit.</p>
+    </header>
+
+    <div id="quote" data-q={JSON.stringify(data)}>
+      <div class="wiz" data-wiz>
+        <form class="card" style="padding:clamp(18px,3vw,28px)" novalidate data-form>
+          <ol class="steps" aria-label="Progress">
+            {['Building', 'Systems', 'Project', 'Contact'].map((l, i) => <li data-st={i + 1}><span><span class="mono">0{i + 1}</span> <span class="st-l">{l}</span></span></li>)}
+          </ol>
+
+          <fieldset class="wiz-step" data-step="1">
+            <legend><h2 tabindex="-1" style="font-size:1.4rem">What kind of building is it?</h2><p class="muted small" style="margin-top:6px">Mixed-use? Pick the part this request is about.</p></legend>
+            <div class="opts c2">
+              {BUILDINGS.map((b) => <label class="opt"><input type="radio" name="type" value={b.slug}><b>{b.name}</b><span><span class="mono">{b.code}</span> · {b.who}</span></label>)}
+              <label class="opt"><input type="radio" name="type" value="other"><b>Something else</b><span>Warehouse, parking, house of worship, other</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="wiz-step" data-step="2" hidden>
+            <legend><h2 tabindex="-1" style="font-size:1.4rem">Which systems?</h2><p class="muted small" style="margin-top:6px">Pick everything that applies. Not sure? Pick the closest and describe the problem at the end.</p></legend>
+            <div class="opts c2">
+              {SERVICES.map((s) => <label class="opt"><input type="checkbox" name="sys" value={s.slug}><b>{s.name}</b><span>{s.desc}</span></label>)}
+            </div>
+          </fieldset>
+
+          <fieldset class="wiz-step" data-step="3" hidden>
+            <legend><h2 tabindex="-1" style="font-size:1.4rem">Tell us about the project</h2></legend>
+            <div class="opts c2">
+              {PROJECTS.map((p) => <label class="opt"><input type="radio" name="project" value={p[0]}><b>{p[1]}</b><span>{p[2]}</span></label>)}
+            </div>
+            <div>
+              <p class="lbl-t">Rough size</p>
+              <p class="muted small" style="margin:4px 0 12px">Estimates are fine. Leave blank what you do not know.</p>
+              <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+                <div class="field"><label for="q-units" data-units-label>Apartments, suites or rooms</label><input id="q-units" name="units" type="number" min="0" inputmode="numeric"></div>
+                <div class="field"><label for="q-floors">Floors</label><input id="q-floors" name="floors" type="number" min="0" inputmode="numeric"></div>
+                <div class="field"><label for="q-doors">Entrances and doors</label><input id="q-doors" name="doors" type="number" min="0" inputmode="numeric"></div>
+                <div class="field"><label for="q-cams">Cameras wanted</label><input id="q-cams" name="cams" type="number" min="0" inputmode="numeric"></div>
+              </div>
+            </div>
+            <div>
+              <p class="lbl-t" id="qtime-l" style="margin-bottom:10px">When do you want it done?</p>
+              <div class="opts c2" role="radiogroup" aria-labelledby="qtime-l">
+                {TIMES.map((t) => <label class="opt"><input type="radio" name="time" value={t[0]}><b>{t[1]}</b></label>)}
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="wiz-step" data-step="4" hidden>
+            <legend><h2 tabindex="-1" style="font-size:1.4rem">Where and who</h2><p class="muted small" style="margin-top:6px">We call to confirm before anyone comes out.</p></legend>
+            <div class="form-grid">
+              <div class="field"><label for="q-name">Your name</label><input id="q-name" name="name" type="text" autocomplete="name" required></div>
+              <div class="field"><label for="q-company">Company or building <span class="muted">(optional)</span></label><input id="q-company" name="company" type="text" autocomplete="organization"></div>
+              <div class="field"><label for="q-role">Your role <span class="muted">(optional)</span></label><select id="q-role" name="role"><option value="">Choose…</option>{ROLES.map((r) => <option>{r}</option>)}</select></div>
+              <div class="field"><label for="q-borough">Borough <span class="muted">(optional)</span></label><select id="q-borough" name="borough"><option value="">Choose…</option>{BOROUGHS.map((r) => <option>{r}</option>)}</select></div>
+              <div class="field"><label for="q-email">Email</label><input id="q-email" name="email" type="email" autocomplete="email" aria-describedby="q-reach"></div>
+              <div class="field"><label for="q-phone">Phone</label><input id="q-phone" name="phone" type="tel" autocomplete="tel" aria-describedby="q-reach"></div>
+              <p class="hint full small muted" id="q-reach" style="margin-top:-6px">Email or phone, at least one.</p>
+              <div class="field full"><label for="q-addr">Building address</label><input id="q-addr" name="address" type="text" placeholder="Street, city, ZIP" autocomplete="street-address" required></div>
+              <div class="field full"><label for="q-notes">Anything else <span class="muted">(optional)</span></label><textarea id="q-notes" name="notes" placeholder="The problem you want solved, existing equipment, access notes"></textarea></div>
+            </div>
+            <div>
+              <p class="lbl-t">Preferred survey window <span class="muted">(optional)</span></p>
+              <p class="muted small" style="margin:4px 0 10px">AM is 8–12, PM is 12–5.</p>
+              <div class="slots" data-slots></div>
+            </div>
+            <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+            <p class="small muted">By sending this you agree that EZTek may call, text or email you about this request. We never share your details. <a href={u('/privacy/')}>Privacy</a></p>
+          </fieldset>
+
+          <p class="err" role="alert" data-err></p>
+          <div class="wiz-nav">
+            <button type="button" class="btn ghost" data-back>Back</button>
+            <button type="submit" class="btn" data-next>Continue</button>
+          </div>
+        </form>
+
+        <aside class="wiz-sum" aria-live="polite">
+          <div class="card stack">
+            <h2 style="font-size:1.1rem">Your request</h2>
+            <div class="stack" style="gap:12px" data-sum></div>
+          </div>
+          <div class="est" data-est hidden>
+            <span class="eyebrow">Typical installed price</span>
+            <span class="v" data-est-v></span>
+            <span class="s" data-est-s></span>
+          </div>
+          <p class="small muted">Prefer to talk? <a href={tel}>{company.phoneDisplay}</a></p>
+        </aside>
+      </div>
+
+      <div class="done-card" data-done hidden tabindex="-1">
+        <p class="eyebrow">Request received</p>
+        <h2>Thanks, we have it.</h2>
+        <p>Your reference number is <span class="ticket-id" data-ref></span></p>
+        <p class="note" data-preview hidden><span class="draft">Preview</span><span>This preview does not send requests yet. On the live site this goes straight to the EZTek team.</span></p>
+        <ol class="next">
+          <li>We call you {company.callback} to confirm the survey time.</li>
+          <li>A technician walks the building with you. The survey is free in NYC.</li>
+          <li>You get a line-item proposal within {company.proposalDays} business days, with care plan options.</li>
+        </ol>
+        <div class="row"><a class="btn" href={u('/')}>Back to home</a><button type="button" class="btn ghost" data-again>Start another quote</button></div>
+      </div>
+    </div>
+  </div></section>
+</Layout>
+
+<script>
+  import { sendLead } from '../../scripts/lead';
+
+  type Est = Record<string, { base: [number, number]; per?: { field: string; range: [number, number] } }>;
+  const root = document.getElementById('quote')!;
+  const D = JSON.parse(root.dataset.q!) as { types: Record<string, { name: string; services: string[] }>; sys: Record<string, string>; plans: Record<string, string>; projects: Record<string, string>; times: Record<string, string>; est: Est };
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const err = root.querySelector<HTMLElement>('[data-err]')!;
+  const back = root.querySelector<HTMLButtonElement>('[data-back]')!;
+  const next = root.querySelector<HTMLButtonElement>('[data-next]')!;
+  const KEY = 'ez-quote';
+  let step = 1;
+  let slot = '';
+  let plan = '';
+
+  // survey slots: next 5 business days, AM and PM
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const slotsBox = root.querySelector<HTMLElement>('[data-slots]')!;
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  for (let n = 0; n < 5;) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+    n++;
+    for (const part of ['AM', 'PM']) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'slotbtn';
+      b.textContent = `${DOW[d.getDay()]} ${MON[d.getMonth()]} ${d.getDate()} · ${part}`;
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => { slot = slot === b.textContent ? '' : b.textContent!; syncSlots(); save(); summary(); });
+      slotsBox.append(b);
+    }
+  }
+  const syncSlots = () => slotsBox.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === slot)));
+
+  const val = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? '';
+  const radio = (n: string) => (form.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? '');
+  const systems = () => Array.from(form.querySelectorAll<HTMLInputElement>('input[name="sys"]:checked')).map((i) => i.value);
+
+  function save() {
+    try {
+      const o: Record<string, unknown> = { step, slot, plan, sys: systems() };
+      new FormData(form).forEach((v, k) => { if (k !== 'sys' && k !== 'website') o[k] = v; });
+      localStorage.setItem(KEY, JSON.stringify(o));
+    } catch { /* storage blocked */ }
+  }
+  function restore() {
+    let o: Record<string, any> = {};
+    try { o = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* ignore */ }
+    const q = new URLSearchParams(location.search);
+    if (q.get('type') && D.types[q.get('type')!]) { o.type = q.get('type'); o.sys = D.types[o.type].services; o.step = 2; }
+    if (q.get('system') && D.sys[q.get('system')!]) { o.sys = Array.from(new Set([...(o.sys || []), q.get('system')])); o.step = o.type ? 2 : 1; }
+    if (q.get('plan') && D.plans[q.get('plan')!]) { o.plan = q.get('plan'); if (!o.sys?.length) o.sys = ['maintenance-support']; o.step = o.type ? 2 : 1; }
+    for (const [k, v] of Object.entries(o)) {
+      if (k === 'sys') form.querySelectorAll<HTMLInputElement>('input[name="sys"]').forEach((i) => (i.checked = (v as string[]).includes(i.value)));
+      else if (k === 'step' || k === 'slot' || k === 'plan') continue;
+      else {
+        const el = form.elements.namedItem(k);
+        if (el instanceof RadioNodeList) el.forEach((r) => ((r as HTMLInputElement).checked = (r as HTMLInputElement).value === v));
+        else if (el) (el as HTMLInputElement).value = String(v);
+      }
+    }
+    slot = o.slot || ''; plan = o.plan || ''; syncSlots();
+    show(Math.min(Math.max(1, o.step || 1), 4), false);
+  }
+
+  const money = (n: number) => '$' + n.toLocaleString('en-US');
+  const round = (n: number) => Math.round(n / 500) * 500;
+  const DEF: Record<string, number> = { units: 20, floors: 4, doors: 2, cams: 8 };
+  function estimate(): [number, number, string[]] | null {
+    const s = systems().filter((x) => x !== 'maintenance-support');
+    if (!s.length) return null;
+    let lo = 0, hi = 0; const assumed = new Set<string>();
+    for (const id of s) {
+      const e = D.est[id]; if (!e) continue;
+      lo += e.base[0]; hi += e.base[1];
+      if (e.per) {
+        let n = Number(val(e.per.field));
+        if (!n) { n = DEF[e.per.field]; assumed.add(`${n} ${e.per.field}`); }
+        lo += n * e.per.range[0]; hi += n * e.per.range[1];
+      }
+    }
+    return [round(lo), round(hi), Array.from(assumed)];
+  }
+
+  function summary() {
+    const rows: [string, string][] = [
+      ['Building', D.types[radio('type')]?.name ?? ''],
+      ['Systems', systems().map((s) => D.sys[s]).join(', ')],
+      ['Project', D.projects[radio('project')] ?? ''],
+      ['Size', ['units', 'floors', 'doors', 'cams'].filter((k) => val(k)).map((k) => `${val(k)} ${k === 'units' ? 'units' : k}`).join(' · ')],
+      ['Timing', D.times[radio('time')] ?? ''],
+      ['Care plan', plan ? D.plans[plan] : ''],
+      ['Survey', slot],
+    ];
+    const box = root.querySelector<HTMLElement>('[data-sum]')!;
+    box.replaceChildren(...rows.filter((r) => r[1] || ['Building', 'Systems'].includes(r[0])).map(([k, v]) => {
+      const div = document.createElement('div'); div.className = 'sum-row';
+      const a = document.createElement('span'); a.textContent = k;
+      const b = document.createElement('span'); b.textContent = v || 'Not chosen yet'; if (!v) b.className = 'sum-empty';
+      div.append(a, b); return div;
+    }));
+    const e = estimate();
+    const est = root.querySelector<HTMLElement>('[data-est]')!;
+    est.hidden = !e;
+    if (e) {
+      root.querySelector('[data-est-v]')!.textContent = `${money(e[0])} – ${money(e[1])}`;
+      root.querySelector('[data-est-s]')!.textContent = (e[2].length ? `Assumes ${e[2].join(', ')}. ` : '') + 'Equipment and labor, before tax. The survey sets the exact price. Draft ranges.';
+    }
+    const ul = root.querySelector('[data-units-label]');
+    if (ul) ul.textContent = radio('type') === 'residence' ? 'Rooms to cover' : 'Apartments, suites or rooms';
+  }
+
+  function show(n: number, focus = true) {
+    step = n;
+    form.querySelectorAll<HTMLElement>('[data-step]').forEach((f) => (f.hidden = Number(f.dataset.step) !== n));
+    form.querySelectorAll<HTMLElement>('[data-st]').forEach((li) => {
+      const i = Number(li.dataset.st);
+      li.className = i < n ? 'done' : i === n ? 'cur' : '';
+      if (i === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+    back.style.visibility = n === 1 ? 'hidden' : 'visible';
+    next.textContent = n === 4 ? 'Send request' : 'Continue';
+    err.textContent = '';
+    summary(); save();
+    if (focus) form.querySelector<HTMLElement>(`[data-step="${n}"] h2`)?.focus();
+  }
+
+  function check(): string {
+    if (step === 1 && !radio('type')) return 'Pick a building type to continue.';
+    if (step === 2 && !systems().length) return 'Pick at least one system.';
+    if (step === 3 && !radio('project')) return 'Pick the kind of project.';
+    if (step === 4) {
+      if (!val('name')) return 'Add your name.';
+      if (!val('email') && !val('phone')) return 'Add an email or phone number so we can reach you.';
+      if (val('email') && !/^\S+@\S+\.\S+$/.test(val('email'))) return 'Check the email address.';
+      if (val('phone') && val('phone').replace(/\D/g, '').length < 10) return 'Check the phone number.';
+      if (!val('address')) return 'Add the building address.';
+    }
+    return '';
+  }
+
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLInputElement;
+    // a building type preselects its usual systems, until the visitor picks their own
+    if (t.name === 'type' && !systems().length && D.types[t.value]) form.querySelectorAll<HTMLInputElement>('input[name="sys"]').forEach((i) => (i.checked = D.types[t.value].services.includes(i.value)));
+    err.textContent = ''; summary(); save();
+  });
+  form.addEventListener('input', () => { summary(); save(); });
+  back.addEventListener('click', () => show(Math.max(1, step - 1)));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const m = check();
+    if (m) { err.textContent = m; return; }
+    if (step < 4) { show(step + 1); return; }
+    next.disabled = true; next.textContent = 'Sending…';
+    const e2 = estimate();
+    const fields: Record<string, string> = {
+      name: val('name'), company: val('company'), role: val('role'), email: val('email'), phone: val('phone'),
+      address: val('address'), borough: val('borough'), notes: val('notes'),
+      building: D.types[radio('type')]?.name ?? '', systems: systems().map((s) => D.sys[s]).join(', '),
+      project: D.projects[radio('project')] ?? '', timing: D.times[radio('time')] ?? '',
+      size: ['units', 'floors', 'doors', 'cams'].map((k) => `${k}: ${val(k) || '-'}`).join(', '),
+      care_plan: plan ? D.plans[plan] : '', survey_window: slot, estimate: e2 ? `${money(e2[0])}-${money(e2[1])}` : '',
+    };
+    const r = await sendLead('quote', 'Quote', 'Q', fields, val('website'));
+    next.disabled = false; next.textContent = 'Send request';
+    if (!r.ok) { err.textContent = 'Could not send. Please call us or try again.'; return; }
+    try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+    root.querySelector<HTMLElement>('[data-wiz]')!.hidden = true;
+    const done = root.querySelector<HTMLElement>('[data-done]')!;
+    done.hidden = false;
+    root.querySelector('[data-ref]')!.textContent = r.id;
+    root.querySelector<HTMLElement>('[data-preview]')!.hidden = !r.preview;
+    done.focus();
+  });
+  root.querySelector('[data-again]')!.addEventListener('click', () => {
+    form.reset(); slot = ''; plan = ''; syncSlots();
+    root.querySelector<HTMLElement>('[data-done]')!.hidden = true;
+    root.querySelector<HTMLElement>('[data-wiz]')!.hidden = false;
+    history.replaceState(null, '', location.pathname);
+    show(1);
+  });
+
+  restore();
+</script>

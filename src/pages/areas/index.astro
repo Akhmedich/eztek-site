@@ -1,0 +1,30 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { AREAS, METRO } from '../../data/areas';
+import { company } from '../../data/company';
+import { u } from '../../lib/url';
+---
+<Layout title="Service Areas: NYC and Metro" description={`EZTek serves all five boroughs of New York City and the metro area from ${company.address.hood}, Brooklyn.`}>
+  <PageHero eyebrow="Service areas" title="All five boroughs and the metro area" lede={`Our office and warehouse are in ${company.address.hood}, Brooklyn. Technicians are dispatched by borough to keep drive time short.`} crumbs={[['Areas', '/areas/']]} />
+  <section class="band"><div class="wrap">
+    <div class="grid g3">
+      {AREAS.map((a) => (
+        <a class="card stack" href={u(`/areas/${a.slug}/`)}>
+          <span class="code"><span>{a.name.toUpperCase()}</span><span>{a.eta}</span></span>
+          <h2 style="font-size:1.3rem">{a.name}</h2>
+          <p class="muted small">{a.note}</p>
+          <p class="small">{a.hoods.slice(0, 5).join(' · ')}</p>
+          <span class="arrow">{a.name} services →</span>
+        </a>))}
+      <div class="card stack">
+        <span class="code"><span>NYC METRO</span><span>By arrangement</span></span>
+        <h2 style="font-size:1.3rem">Outside the city</h2>
+        <p class="muted small">Projects in {METRO.join(', ')}. Service plans available for sites we installed.</p>
+      </div>
+    </div>
+    <p class="muted small" style="margin-top:20px">Dispatch targets are for care plan clients. One-time service calls are scheduled at the first open slot.</p>
+  </div></section>
+  <CtaBand />
+</Layout>

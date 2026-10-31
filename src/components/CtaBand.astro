@@ -1,0 +1,10 @@
+---
+import { u, tel } from '../lib/url';
+import { company } from '../data/company';
+interface Props { title?: string; text?: string; quoteHref?: string }
+const { title = 'Tell us about your building.', text = 'We come look at it, then send a line-item proposal within 3 business days.', quoteHref = '/quote/' } = Astro.props;
+---
+<section class="cta-band"><div class="wrap cta-in">
+  <div><h2>{title}</h2><p>{text}</p></div>
+  <div class="row"><a class="btn lg" href={u(quoteHref)}>Get a quote</a><a class="btn lg dark-ghost" href={tel}>Call {company.phoneDisplay}</a></div>
+</div></section>

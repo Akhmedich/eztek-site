@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { company } from '../../data/company';
+// PLACEHOLDER: plain-language draft, to be reviewed by EZTek's lawyer before launch
+---
+<Layout title="Privacy Policy" description="How EZTek Solutions collects and uses information from this website and the client portal.">
+  <PageHero eyebrow="Legal" title="Privacy policy" crumbs={[['Privacy', '/privacy/']]} />
+  <section class="band"><div class="wrap prose">
+    <p class="note"><span class="draft">Draft</span><span>Plain-language draft for legal review.</span></p>
+    <h2>What we collect</h2>
+    <p>What you type into our forms: name, contact details, building address and the details of your request. We also record how you found the site (for example a search ad or a referral link) so we know which channels work.</p>
+    <h2>How we use it</h2>
+    <p>To answer your request, schedule surveys and service, send proposals and invoices, and run the client portal. We may call, text or email you about your request.</p>
+    <h2>Who sees it</h2>
+    <p>EZTek staff and the service providers that run our email, forms, portal and payments, only to provide those services. We do not sell your information.</p>
+    <h2>Video and access data</h2>
+    <p>Footage and access logs from systems we install belong to the building owner. We access them only to provide service you asked for.</p>
+    <h2>Your choices</h2>
+    <p>Ask us to see, correct or delete your information at <a href={`mailto:${company.email}`}>{company.email}</a> or {company.phoneDisplay}.</p>
+  </div></section>
+</Layout>

@@ -1,0 +1,162 @@
+---
+import '../styles/global.css';
+import Logo from '../components/Logo.astro';
+import Icon from '../components/Icon.astro';
+import { company, PREVIEW } from '../data/company';
+import { SERVICES } from '../data/services';
+import { BUILDINGS } from '../data/buildings';
+import { AREAS, METRO } from '../data/areas';
+import { u, tel, sms } from '../lib/url';
+
+interface Props { title: string; description: string; schema?: object[] }
+const { title, description, schema = [] } = Astro.props;
+const fullTitle = title.includes('EZTek') ? title : `${title} | EZTek Solutions`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
+const cur = (p: string) => (path.startsWith(p) ? 'page' : undefined);
+
+const business = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': new URL(u('/'), Astro.site).href + '#business',
+  name: company.name,
+  url: new URL(u('/'), Astro.site).href,
+  telephone: company.phone,
+  email: company.email,
+  foundingDate: String(company.founded),
+  address: { '@type': 'PostalAddress', streetAddress: company.address.street, addressLocality: company.address.city, addressRegion: company.address.region, postalCode: company.address.zip, addressCountry: 'US' },
+  geo: { '@type': 'GeoCoordinates', latitude: company.geo.lat, longitude: company.geo.lng },
+  areaServed: [...AREAS.map((a) => ({ '@type': 'City', name: a.name === 'The Bronx' ? 'Bronx' : a.name })), ...METRO.map((m) => ({ '@type': 'AdministrativeArea', name: m }))],
+  openingHoursSpecification: company.hours.map((h) => ({ '@type': 'OpeningHoursSpecification', dayOfWeek: h.spec, opens: h.opens, closes: h.closes })),
+  description: 'Low-voltage systems integrator: security cameras, access control, intercoms, audio-video, networks and building automation.',
+};
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{fullTitle}</title>
+  <meta name="description" content={description}>
+  {PREVIEW && <meta name="robots" content="noindex, nofollow, noarchive">}
+  <link rel="canonical" href={canonical}>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={fullTitle}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta name="theme-color" content="#0F2A33">
+  <link rel="icon" href={u('/favicon.svg')} type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <script type="application/ld+json" set:html={JSON.stringify(business)} />
+  {schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="util"><div class="wrap util-in">
+    {PREVIEW ? <span class="preview">Preview · sample data marked for replacement</span> : <span>{company.emergency}</span>}
+    <span class="util-r">
+      <span class="hrs">{company.hours[0].days} {company.hours[0].time}</span>
+      <span class="addr">{company.address.street}, {company.address.city}, {company.address.region} {company.address.zip}</span>
+      <a href={u('/portal/')}>Client login</a>
+    </span>
+  </div></div>
+
+  <header class="top"><div class="wrap top-in">
+    <Logo />
+    <nav class="nav" id="nav" aria-label="Main">
+      <div class="dd">
+        <button type="button" aria-expanded="false" aria-controls="mega-svc" data-dd>Services</button>
+        <div class="mega" id="mega-svc" hidden>
+          {SERVICES.map((s) => <a href={u(`/services/${s.slug}/`)}><Icon name={s.icon} /><b>{s.name}</b><span>{s.desc}</span></a>)}
+          <a class="all" href={u('/services/')}>All services <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <div class="dd">
+        <button type="button" aria-expanded="false" aria-controls="mega-bld" data-dd>Buildings</button>
+        <div class="mega" id="mega-bld" hidden>
+          {BUILDINGS.map((b) => <a href={u(`/buildings/${b.slug}/`)}><span class="ic mono" style="font-size:11px;color:var(--fiber-ink);padding-top:2px">{b.code}</span><b>{b.name}</b><span>{b.who}</span></a>)}
+          <a class="all" href={u('/buildings/')}>All building types <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <a href={u('/care-plans/')} aria-current={cur('/care-plans/')}>Care plans</a>
+      <a href={u('/areas/')} aria-current={cur('/areas/')}>Areas</a>
+      <a href={u('/about/')} aria-current={cur('/about/')}>About</a>
+      <a href={u('/service/')} aria-current={cur('/service/')}>Request service</a>
+    </nav>
+    <div class="top-act">
+      <a class="top-tel" href={tel}><Icon name="phone" /><span class="num">{company.phoneDisplay}</span></a>
+      <a href={u('/quote/')} class="btn sm">Get a quote</a>
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+    </div>
+  </div></header>
+
+  <main id="main"><slot /></main>
+
+  <footer class="site-foot">
+    <div class="wrap foot">
+      <div class="stack">
+        <Logo />
+        <p>Low-voltage systems integration for residential, commercial, multifamily, educational and institutional properties in the New York metropolitan area since {company.founded}.</p>
+        <p class="small">{company.license}<br>{company.insurance}</p>
+      </div>
+      <div><h2>Services</h2><ul>{SERVICES.map((s) => <li><a href={u(`/services/${s.slug}/`)}>{s.name}</a></li>)}</ul></div>
+      <div><h2>Buildings</h2><ul>{BUILDINGS.map((b) => <li><a href={u(`/buildings/${b.slug}/`)}>{b.name}</a></li>)}</ul>
+        <h2 style="margin-top:22px">Areas</h2><ul>{AREAS.map((a) => <li><a href={u(`/areas/${a.slug}/`)}>{a.name}</a></li>)}</ul></div>
+      <div><h2>Company</h2><ul>
+        <li><a href={u('/about/')}>About</a></li>
+        <li><a href={u('/care-plans/')}>Care plans</a></li>
+        <li><a href={u('/partners/')}>For contractors & architects</a></li>
+        <li><a href={u('/contact/')}>Contact</a></li>
+      </ul>
+        <h2 style="margin-top:22px">Clients</h2><ul>
+        <li><a href={u('/portal/')}>Client portal</a></li>
+        <li><a href={u('/service/')}>Request service</a></li>
+        <li><a href={u('/portal/')}>Pay an invoice</a></li>
+        <li><a href={u('/portal/')}>Request a COI</a></li>
+      </ul></div>
+      <div><h2>Contact</h2><ul>
+        <li><a class="num" href={tel}>{company.phoneDisplay}</a></li>
+        <li><a href={`mailto:${company.email}`}>{company.email}</a></li>
+        <li>{company.address.street}<br>{company.address.city}, {company.address.region} {company.address.zip}</li>
+        {company.hours.map((h) => <li>{h.days} {h.time}</li>)}
+        <li>{company.emergency}</li>
+      </ul></div>
+    </div>
+    <div class="wrap foot-b"><span>© {new Date().getFullYear()} {company.name} · Est. {company.founded}</span><span><a href={u('/privacy/')}>Privacy</a> · <a href={u('/terms/')}>Terms</a> · <a href={u('/admin/')}>Staff</a></span></div>
+  </footer>
+
+  <nav class="actbar" aria-label="Quick actions">
+    <a href={tel}><Icon name="phone" />Call</a>
+    {company.smsEnabled ? <a href={sms}><Icon name="chat" />Text us</a> : <a href={u('/service/')}><Icon name="maintenance" />Service</a>}
+    <a class="pri" href={u('/quote/')}><Icon name="arrow" />Get a quote</a>
+  </nav>
+
+  <script>
+    import { rememberSource } from '../scripts/lead';
+    rememberSource();
+    const nav = document.getElementById('nav')!;
+    const menu = document.getElementById('menuBtn')!;
+    menu.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      menu.setAttribute('aria-expanded', String(open));
+    });
+    const dds = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-dd]'));
+    const close = (except?: HTMLButtonElement) => dds.forEach((b) => {
+      if (b === except) return;
+      b.setAttribute('aria-expanded', 'false');
+      document.getElementById(b.getAttribute('aria-controls')!)!.hidden = true;
+    });
+    dds.forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = b.getAttribute('aria-expanded') !== 'true';
+      close(b);
+      b.setAttribute('aria-expanded', String(open));
+      document.getElementById(b.getAttribute('aria-controls')!)!.hidden = !open;
+    }));
+    document.addEventListener('click', (e) => { if (!(e.target as Element).closest('.mega')) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  </script>
+</body>
+</html>

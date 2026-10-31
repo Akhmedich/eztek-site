@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import Faqs from '../../components/Faqs.astro';
+import Cases from '../../components/Cases.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { BUILDINGS, type Building } from '../../data/buildings';
+import { serviceBySlug } from '../../data/services';
+import { PLANS } from '../../data/plans';
+import { PROJECTS } from '../../data/proof';
+import { u, money } from '../../lib/url';
+
+export function getStaticPaths() {
+  return BUILDINGS.map((b) => ({ params: { slug: b.slug }, props: { b } }));
+}
+const { b } = Astro.props as { b: Building };
+const plan = PLANS[b.plan];
+const hasCases = PROJECTS.some((p) => p.type === b.slug);
+---
+<Layout title={b.seo} description={`${b.intro} For ${b.who.charAt(0).toLowerCase() + b.who.slice(1)}`}>
+  <PageHero eyebrow={`Building types · Occupancy ${b.code}`} title={b.name} lede={b.intro} crumbs={[['Buildings', '/buildings/'], [b.name, `/buildings/${b.slug}/`]]}>
+    <div slot="actions" class="cta-row"><a class="btn lg" href={u(`/quote/?type=${b.slug}`)}>Start a quote for this building</a></div>
+    <div class="hero-card">
+      <span class="k">Who we work with</span>
+      <p style="color:var(--hero-ink)">{b.who}</p>
+      <span class="k" style="margin-top:6px">Suggested care plan</span>
+      <p style="color:var(--hero-ink)"><b>{plan.name}</b> · {plan.from ? 'from ' : ''}{money(plan.price)}/mo per building</p>
+    </div>
+  </PageHero>
+
+  <section class="band"><div class="wrap svc-cols">
+    <div class="stack" style="gap:40px">
+      <div><h2 style="font-size:1.6rem;margin-bottom:16px">What these buildings usually ask for</h2>
+        <ul class="inc">{b.needs.map((n) => <li><Icon name="check" />{n}</li>)}</ul></div>
+      <div><h2 style="font-size:1.6rem;margin-bottom:16px">Systems we install</h2>
+        <div class="stack">{b.services.map((s) => { const x = serviceBySlug[s]; return (
+          <a class="card row" href={u(`/services/${s}/`)} style="flex-wrap:nowrap;align-items:flex-start;gap:14px"><Icon name={x.icon} size={28} /><span class="stack" style="gap:4px"><b>{x.name}</b><span class="muted small">{x.desc}</span></span></a>); })}</div></div>
+      <Faqs faqs={b.faqs} />
+    </div>
+    <aside class="aside">
+      <div class="card stack">
+        <h3>Price it for your building</h3>
+        <p class="muted small">We start the quote with the systems listed here. Change anything, and see a typical range before the visit.</p>
+        <a class="btn" href={u(`/quote/?type=${b.slug}`)}>Start a quote</a>
+      </div>
+      <div class="card stack">
+        <h3>{plan.name} care plan</h3>
+        <p class="muted small">{plan.blurb}</p>
+        <a class="arrow" href={u('/care-plans/')}>Compare plans →</a>
+      </div>
+    </aside>
+  </div></section>
+  {hasCases && <section class="band alt"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Work</p><h2>Projects in buildings like yours</h2></div>
+    <Cases filter={(p) => p.type === b.slug} />
+  </div></section>}
+  <CtaBand quoteHref={`/quote/?type=${b.slug}`} />
+</Layout>

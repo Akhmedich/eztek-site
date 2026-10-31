@@ -1,0 +1,111 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import { SERVICES } from '../../data/services';
+import { company } from '../../data/company';
+import { u, tel, sms } from '../../lib/url';
+
+const URGENCY = [
+  ['emergency', 'Emergency', 'The building is not secure: a door will not lock, entry or all cameras are down'],
+  ['urgent', 'Urgent', 'Something important stopped working, but the building is secure'],
+  ['routine', 'Routine', 'Repair, change or programming that can be scheduled'],
+];
+---
+<Layout title="Request Service or Repair" description="Report a problem with a camera, intercom, access control, network or AV system. Emergency dispatch for buildings that are not secure. NYC.">
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap">
+    <div class="wiz">
+      <div class="stack" style="gap:20px">
+        <header class="sec-head" style="margin:0">
+          <p class="eyebrow">Service and repairs</p>
+          <h1 style="font-size:clamp(1.9rem,3.6vw,2.7rem)">Something is not working?</h1>
+          <p class="muted">Tell us what happened. We service systems we installed and systems installed by others. Care plan clients can also open requests in the <a href={u('/portal/')}>client portal</a>.</p>
+        </header>
+
+        <div class="card" style="padding:clamp(18px,3vw,28px)" id="svc">
+          <form class="stack" style="gap:22px" novalidate data-form>
+            <fieldset>
+              <legend class="lbl-t" style="margin-bottom:10px">How urgent is it?</legend>
+              <div class="opts c3">{URGENCY.map((x) => <label class="opt"><input type="radio" name="urgency" value={x[0]}><b>{x[1]}</b><span>{x[2]}</span></label>)}</div>
+            </fieldset>
+            <div class="note" data-emerg hidden style="background:var(--bad-wash)"><Icon name="phone" /><span><b>Call us now for emergencies: <a href={tel}>{company.phoneDisplay}</a>.</b> A form can wait in an inbox; a call reaches the dispatcher. You can still send this form with the details.</span></div>
+            <div class="form-grid">
+              <div class="field"><label for="s-sys">Which system?</label><select id="s-sys" name="system"><option value="">Choose…</option>{SERVICES.filter((s) => s.slug !== 'maintenance-support').map((s) => <option value={s.name}>{s.name}</option>)}<option>Not sure</option></select></div>
+              <div class="field"><label for="s-client">Are you an EZTek client?</label><select id="s-client" name="client"><option value="">Choose…</option><option>Yes, on a care plan</option><option>Yes, EZTek installed it</option><option>No, someone else installed it</option></select></div>
+              <div class="field full"><label for="s-desc">What is happening?</label><textarea id="s-desc" name="description" placeholder="Example: lobby intercom shows no picture since this morning, residents can still use fobs."></textarea></div>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label for="s-name">Your name</label><input id="s-name" name="name" type="text" autocomplete="name"></div>
+              <div class="field"><label for="s-phone">Phone</label><input id="s-phone" name="phone" type="tel" autocomplete="tel"></div>
+              <div class="field"><label for="s-email">Email <span class="muted">(optional)</span></label><input id="s-email" name="email" type="email" autocomplete="email"></div>
+              <div class="field"><label for="s-borough">Borough <span class="muted">(optional)</span></label><select id="s-borough" name="borough"><option value="">Choose…</option>{['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx', 'Outside NYC'].map((b) => <option>{b}</option>)}</select></div>
+              <div class="field full"><label for="s-addr">Building address</label><input id="s-addr" name="address" type="text" autocomplete="street-address" placeholder="Street, city, ZIP"></div>
+              <div class="field full"><label for="s-access">Access notes <span class="muted">(optional)</span></label><input id="s-access" name="access" type="text" placeholder="Who meets the tech, where the equipment is, parking"></div>
+            </div>
+            <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+            <p class="err" role="alert" data-err></p>
+            <div class="row sp"><span class="small muted">Photos help. Text them to {company.phoneDisplay} with your reference number.</span><button class="btn lg" type="submit" data-send>Send request</button></div>
+          </form>
+          <div class="done-card" data-done hidden tabindex="-1">
+            <p class="eyebrow">Request received</p>
+            <h2>We are on it.</h2>
+            <p>Your reference number is <span class="ticket-id" data-ref></span></p>
+            <p class="note" data-preview hidden><span class="draft">Preview</span><span>This preview does not send requests yet.</span></p>
+            <ol class="next">
+              <li>The dispatcher reviews your request and calls you {company.callback}.</li>
+              <li>Many issues are fixed remotely. If not, we book a technician and text you the window.</li>
+              <li>After the visit you get a short report of what was done.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <aside class="wiz-sum">
+        <div class="card stack">
+          <h2 style="font-size:1.1rem">Faster ways to reach us</h2>
+          <a class="btn" href={tel}><Icon name="phone" />Call {company.phoneDisplay}</a>
+          {company.smsEnabled && <a class="btn ghost" href={sms}><Icon name="chat" />Text us a photo</a>}
+          <p class="small muted">{company.hours.map((h) => `${h.days} ${h.time}`).join(' · ')}<br>{company.emergency}.</p>
+        </div>
+        <div class="card stack">
+          <h2 style="font-size:1.1rem">On a care plan?</h2>
+          <p class="small muted">Plan clients get priority dispatch and lower labor rates. Requests in the portal go straight to your account manager.</p>
+          <a class="arrow" href={u('/portal/')}>Open the client portal →</a>
+          <a class="arrow" href={u('/care-plans/')}>Compare care plans →</a>
+        </div>
+      </aside>
+    </div>
+  </div></section>
+</Layout>
+
+<script>
+  import { sendLead } from '../../scripts/lead';
+  const root = document.getElementById('svc')!;
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const err = root.querySelector<HTMLElement>('[data-err]')!;
+  const val = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement)?.value ?? '').trim();
+  const urgency = () => form.querySelector<HTMLInputElement>('input[name="urgency"]:checked')?.value ?? '';
+  form.addEventListener('change', () => { root.querySelector<HTMLElement>('[data-emerg]')!.hidden = urgency() !== 'emergency'; err.textContent = ''; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const m = !urgency() ? 'Pick how urgent it is.'
+      : !val('description') ? 'Describe what is happening.'
+      : !val('name') ? 'Add your name.'
+      : val('phone').replace(/\D/g, '').length < 10 ? 'Add a phone number so the dispatcher can call you.'
+      : val('email') && !/^\S+@\S+\.\S+$/.test(val('email')) ? 'Check the email address.'
+      : !val('address') ? 'Add the building address.' : '';
+    if (m) { err.textContent = m; return; }
+    const btn = root.querySelector<HTMLButtonElement>('[data-send]')!;
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const fields: Record<string, string> = {};
+    ['urgency', 'systems', 'client', 'message', 'name', 'phone', 'email', 'borough', 'address', 'access'].forEach((k) => (fields[k] = k === 'urgency' ? urgency() : val(k === 'systems' ? 'system' : k === 'message' ? 'description' : k)));
+    const r = await sendLead('service', urgency() === 'emergency' ? 'EMERGENCY service' : 'Service', 'S', fields, val('website'));
+    btn.disabled = false; btn.textContent = 'Send request';
+    if (!r.ok) { err.textContent = 'Could not send. Please call us.'; return; }
+    form.hidden = true;
+    const done = root.querySelector<HTMLElement>('[data-done]')!;
+    done.hidden = false;
+    root.querySelector('[data-ref]')!.textContent = r.id;
+    root.querySelector<HTMLElement>('[data-preview]')!.hidden = !r.preview;
+    done.focus();
+  });
+</script>

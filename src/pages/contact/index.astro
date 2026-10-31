@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import SimpleForm from '../../components/SimpleForm.astro';
+import { company } from '../../data/company';
+import { u, tel, sms } from '../../lib/url';
+const a = company.address;
+const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${company.name}, ${a.street}, ${a.city}, ${a.region} ${a.zip}`)}`;
+---
+<Layout title="Contact EZTek Solutions" description={`Call ${company.phoneDisplay} or visit ${a.street}, ${a.city}, ${a.region} ${a.zip}. Quotes, service requests, billing and general questions.`}>
+  <PageHero eyebrow="Contact" title="Talk to a person, not a call center" lede="For a new project, start a quote. For something broken, request service. For everything else, write or call." crumbs={[['Contact', '/contact/']]} />
+  <section class="band"><div class="wrap svc-cols">
+    <div class="stack" style="gap:24px">
+      <div class="grid g2">
+        <a class="card stack" href={u('/quote/')}><Icon name="arrow" size={26} /><h2 style="font-size:1.2rem">New project</h2><p class="muted small">Free site survey and a line-item proposal.</p></a>
+        <a class="card stack" href={u('/service/')}><Icon name="maintenance" size={26} /><h2 style="font-size:1.2rem">Service or repair</h2><p class="muted small">Emergency, urgent or scheduled work.</p></a>
+      </div>
+      <h2 style="font-size:1.4rem">Send a message</h2>
+      <SimpleForm kind="Contact" prefix="C" topics={['General question', 'Billing', 'Certificate of insurance', 'Careers', 'Vendor or supplier', 'Other']} />
+    </div>
+    <aside class="aside">
+      <div class="card stack">
+        <a class="row" href={tel} style="text-decoration:none;color:var(--ink)"><Icon name="phone" /><b class="num">{company.phoneDisplay}</b></a>
+        {company.smsEnabled && <a class="row" href={sms} style="text-decoration:none;color:var(--ink)"><Icon name="chat" />Text the same number</a>}
+        <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><Icon name="pin" /><span>{a.street}<br>{a.city}, {a.region} {a.zip}<br><a href={mapUrl} rel="noopener" target="_blank">Open in Google Maps</a></span></div>
+        <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><Icon name="clock" /><span>{company.hours.map((h) => <>{h.days} {h.time}<br></>)}{company.emergency}</span></div>
+      </div>
+      <div class="card stack small">
+        <span><b>General</b> <a href={`mailto:${company.email}`}>{company.email}</a></span>
+        <span><b>Service</b> <a href={`mailto:${company.serviceEmail}`}>{company.serviceEmail}</a></span>
+        <span><b>Billing</b> <a href={`mailto:${company.billingEmail}`}>{company.billingEmail}</a></span>
+      </div>
+    </aside>
+  </div></section>
+</Layout>

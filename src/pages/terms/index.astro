@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { company } from '../../data/company';
+// PLACEHOLDER: plain-language draft, to be reviewed by EZTek's lawyer before launch
+---
+<Layout title="Terms of Use" description="Terms for using the EZTek Solutions website, price estimates and client portal.">
+  <PageHero eyebrow="Legal" title="Terms of use" crumbs={[['Terms', '/terms/']]} />
+  <section class="band"><div class="wrap prose">
+    <p class="note"><span class="draft">Draft</span><span>Plain-language draft for legal review.</span></p>
+    <h2>Estimates</h2>
+    <p>Price ranges on this site are typical ranges, not offers. The price of a project is set in a written proposal after a site survey.</p>
+    <h2>Care plans</h2>
+    <p>Plan terms, dispatch targets and cancellation are set in your service agreement. If this site and your agreement differ, the agreement applies.</p>
+    <h2>Client portal</h2>
+    <p>Keep your sign-in to yourself and remove users who leave your organization. Account admins are responsible for the users they invite.</p>
+    <h2>Contact</h2>
+    <p>{company.name}, {company.address.street}, {company.address.city}, {company.address.region} {company.address.zip} · {company.phoneDisplay}</p>
+  </div></section>
+</Layout>

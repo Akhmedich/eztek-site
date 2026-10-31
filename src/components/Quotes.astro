@@ -1,0 +1,10 @@
+---
+import { QUOTES } from '../data/proof';
+---
+<div class="grid g3">
+  {QUOTES.map((q) => (
+    <blockquote class="card q">
+      <p>“{q.text}”</p>
+      <footer><b>{q.who}</b>{q.org} · <span class="draft">Sample</span></footer>
+    </blockquote>))}
+</div>

@@ -1,0 +1,21 @@
+---
+import { PROJECTS } from '../data/proof';
+import { serviceBySlug } from '../data/services';
+interface Props { filter?: (p: (typeof PROJECTS)[number]) => boolean }
+const { filter } = Astro.props;
+const list = filter ? PROJECTS.filter(filter) : PROJECTS;
+---
+{list.length > 0 && <div class="grid g3">
+  {list.map((p) => (
+    <article class="card case">
+      <div class="ph">Project photo</div>
+      <div class="body">
+        <span class="code"><span>{p.hood.toUpperCase()}</span><span class="draft">Sample</span></span>
+        <h3>{p.title}</h3>
+        <p class="muted small"><b>Before:</b> {p.problem}</p>
+        <p class="muted small"><b>After:</b> {p.result}</p>
+        <div class="sysrow">{p.services.map((s) => <i>{serviceBySlug[s].short}</i>)}</div>
+        <div class="metric"><b>{p.metric.v}</b><span>{p.metric.k}</span></div>
+      </div>
+    </article>))}
+</div>}

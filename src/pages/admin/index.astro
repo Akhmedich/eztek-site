@@ -1,0 +1,238 @@
+---
+// Staff dashboard: leads, jobs and clients from Supabase. Static page; data loads after sign-in.
+import '../../styles/global.css';
+import '../../styles/app.css';
+import Logo from '../../components/Logo.astro';
+import { u } from '../../lib/url';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>EZTek Ops</title>
+  <link rel="icon" href={u('/favicon.svg')} type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+  <header class="ops-top"><div class="wrap"><Logo /><span class="ops-tag">OPS</span><span class="ops-user" id="who"></span></div></header>
+  <main class="wrap ops" id="app" aria-live="polite"><p class="muted">Loading…</p></main>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script>
+    import { sb, esc, ago, when, localInput } from '../../lib/supabase';
+
+    const app = document.getElementById('app')!;
+    const who = document.getElementById('who')!;
+    const toastEl = document.getElementById('toast')!;
+    let toastT: number | undefined;
+    const toast = (m: string) => { toastEl.textContent = m; toastEl.hidden = false; clearTimeout(toastT); toastT = window.setTimeout(() => (toastEl.hidden = true), 3000); };
+
+    type Row = Record<string, any>;
+    const S = { tab: 'leads', leadStatus: 'new', jobStage: 'open', sel: '' as string, staff: [] as Row[], me: null as Row | null };
+    const LEAD_ST = ['new', 'contacted', 'survey', 'proposal', 'won', 'lost', 'spam'];
+    const JOB_ST = ['received', 'scheduled', 'assigned', 'on_site', 'completed', 'cancelled'];
+    const label = (s: string) => s.replace('_', ' ').replace(/^./, (c) => c.toUpperCase());
+    const pri = (p?: string) => p === 'emergency' ? '<span class="pill bad">Emergency</span>' : p === 'urgent' ? '<span class="pill warn">Urgent</span>' : '';
+    const opts = (list: string[], cur: string) => list.map((v) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label(v)}</option>`).join('');
+
+    if (!sb) {
+      app.innerHTML = `<div class="card stack" style="max-width:640px"><h1 style="font-size:1.6rem">Not connected yet</h1>
+        <p class="muted">The dashboard reads from the EZTek Supabase project. Set <span class="mono">PUBLIC_SUPABASE_URL</span> and <span class="mono">PUBLIC_SUPABASE_ANON_KEY</span> as repository variables and redeploy. Steps are in <span class="mono">docs/ops.md</span>.</p></div>`;
+    } else start();
+
+    async function start() {
+      const { data: { session } } = await sb!.auth.getSession();
+      sb!.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') location.reload(); });
+      if (!session) return signIn();
+      const { data: me } = await sb!.from('staff').select('*').eq('user_id', session.user.id).maybeSingle();
+      who.innerHTML = `${esc(session.user.email)} <button class="link" id="out">Sign out</button>`;
+      document.getElementById('out')!.onclick = () => sb!.auth.signOut();
+      if (!me) {
+        app.innerHTML = `<div class="card stack" style="max-width:640px"><h1 style="font-size:1.5rem">Not on the staff list</h1>
+          <p class="muted">An admin adds you with this user id (Supabase table <span class="mono">staff</span>):</p><p class="mono">${esc(session.user.id)}</p></div>`;
+        return;
+      }
+      S.me = me;
+      const { data: staff } = await sb!.from('staff').select('user_id,name,role').eq('active', true).order('name');
+      S.staff = staff || [];
+      sb!.channel('ops').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, (p) => { toast(`New lead: ${p.new.name}`); render(); }).subscribe();
+      render();
+    }
+
+    function signIn() {
+      app.innerHTML = `<form class="card stack" style="max-width:420px;margin:40px auto" id="si"><h1 style="font-size:1.6rem">Staff sign-in</h1>
+        <p class="muted small">We email you a one-time link.</p>
+        <div class="field"><label for="em">Work email</label><input id="em" type="email" autocomplete="email" required></div>
+        <p class="err" id="er"></p><button class="btn" type="submit">Email me a link</button></form>`;
+      document.getElementById('si')!.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = (document.getElementById('em') as HTMLInputElement).value.trim();
+        const { error } = await sb!.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0], shouldCreateUser: true } });
+        document.getElementById('er')!.textContent = error ? error.message : '';
+        if (!error) app.innerHTML = '<div class="card" style="max-width:420px;margin:40px auto"><h2 style="font-size:1.3rem">Check your email</h2><p class="muted">Open the link on this device to sign in.</p></div>';
+      };
+    }
+
+    async function kpis() {
+      const { data } = await sb!.from('ops_today').select('*').single();
+      if (!data) return '';
+      const k = (key: string, name: string, alert = false) => `<div class="card${alert && data[key] ? ' alert' : ''}"><span class="k">${name}</span><span class="v">${data[key]}</span></div>`;
+      return `<div class="kpis">${k('new_leads', 'New leads')}${k('new_emergencies', 'Emergencies', true)}${k('leads_waiting_over_1h', 'Waiting > 1 h', true)}${k('jobs_unscheduled', 'Unscheduled jobs', true)}${k('jobs_today', 'Jobs today')}${k('systems_down', 'Systems down', true)}</div>`;
+    }
+
+    async function render() {
+      const head = await kpis();
+      const tabs = `<div class="tabs" role="tablist">${[['leads', 'Leads'], ['jobs', 'Jobs'], ['clients', 'Clients']].map(([id, n]) => `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}">${n}</button>`).join('')}</div>`;
+      const body = S.tab === 'leads' ? await leadsView() : S.tab === 'jobs' ? await jobsView() : await clientsView();
+      app.innerHTML = head + tabs + body;
+    }
+
+    // Leads -----------------------------------------------------------------
+    async function leadsView() {
+      let q = sb!.from('leads').select('*, systems(name, sites(name))').order('created_at', { ascending: false }).limit(200);
+      if (S.leadStatus !== 'all') q = q.eq('status', S.leadStatus);
+      const { data: leads = [] } = await q;
+      const filters = `<div class="chipf">${[...LEAD_ST, 'all'].map((s) => `<button data-ls="${s}" aria-pressed="${S.leadStatus === s}">${label(s)}</button>`).join('')}</div>`;
+      const list = leads!.length ? leads!.map((l) => `<button data-lead="${l.id}" aria-current="${S.sel === l.id}">
+        <span class="t">${esc(l.name)}${l.company ? ' · ' + esc(l.company) : ''}</span><span class="small muted">${ago(l.created_at)}</span>
+        <span class="m">${pri(l.urgency)}<span class="pill info">${label(l.kind)}</span>${esc(l.building || '')} ${esc(l.systems || '')}${l.borough ? ' · ' + esc(l.borough) : ''}</span></button>`).join('') : '<p class="empty">No leads here.</p>';
+      const cur = leads!.find((l) => l.id === S.sel);
+      return filters + `<div class="cols"><div class="rows">${list}</div><div>${cur ? await leadDetail(cur) : '<p class="empty card">Pick a lead.</p>'}</div></div>`;
+    }
+
+    async function notesFor(col: 'lead_id' | 'job_id', id: string) {
+      const { data = [] } = await sb!.from('notes').select('*').eq(col, id).order('created_at');
+      return `<div class="note-list">${data!.map((n) => `<div class="note-item${n.client_visible ? ' cv' : ''}"><small>${esc(n.author_name || 'Staff')} · ${ago(n.created_at)}${n.client_visible ? ' · client sees this' : ''}</small>${esc(n.body)}</div>`).join('') || '<p class="small muted">No notes yet.</p>'}</div>
+        <form class="inline" data-note="${col}:${id}"><div class="field"><label class="sr" for="nb">Note</label><input id="nb" type="text" placeholder="Add a note: called, left voicemail, survey booked…" required></div>${col === 'job_id' ? '<label class="small"><input type="checkbox" name="cv"> Client sees it</label>' : ''}<button class="btn sm">Add</button></form>`;
+    }
+
+    async function leadDetail(l: Row) {
+      const rows: [string, string][] = [['Reference', l.ref], ['QR sticker', l.systems ? `${l.systems.name} · ${l.systems.sites?.name}` : ''], ['Phone', l.phone], ['Email', l.email], ['Role', l.role], ['Address', [l.address, l.borough].filter(Boolean).join(', ')], ['Building', l.building], ['Systems', l.systems], ['Project', l.project], ['Size', l.size], ['Timing', l.timing], ['Care plan', l.care_plan], ['Survey window', l.survey_window], ['Estimate shown', l.estimate], ['Message', l.message], ['Source', Object.entries(l.source || {}).map(([k, v]) => `${k}: ${v}`).join('\n')]];
+      return `<div class="card detail">
+        <div class="row sp"><h2 style="font-size:1.3rem">${esc(l.name)}</h2>${pri(l.urgency)}</div>
+        <div class="row">${l.phone ? `<a class="btn sm" href="tel:${esc(l.phone)}">Call</a>` : ''}${l.email ? `<a class="btn sm ghost" href="mailto:${esc(l.email)}?subject=${encodeURIComponent('EZTek · ' + l.ref)}">Email</a>` : ''}
+          <button class="btn sm ghost" data-convert="${l.id}" data-kind="${l.kind === 'service' ? 'service' : 'survey'}">${l.org_id ? 'Add another job' : 'Create client + ' + (l.kind === 'service' ? 'service job' : 'survey')}</button></div>
+        <div class="inline">
+          <div class="field"><label for="lst">Status</label><select id="lst" data-lead-status="${l.id}">${opts(LEAD_ST, l.status)}</select></div>
+          <div class="field"><label for="las">Owner</label><select id="las" data-lead-owner="${l.id}"><option value="">Nobody</option>${S.staff.map((s) => `<option value="${s.user_id}"${s.user_id === l.assigned_to ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+          <div class="field"><label for="lna">Next action</label><input id="lna" type="datetime-local" data-lead-next="${l.id}" value="${localInput(l.next_action_at)}"></div>
+        </div>
+        <dl class="kv">${rows.filter((r) => r[1]).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        <h3>Notes</h3>${await notesFor('lead_id', l.id)}</div>`;
+    }
+
+    // Jobs ------------------------------------------------------------------
+    async function jobsView() {
+      let q = sb!.from('jobs').select('*, sites(name,address), organizations(name)').order('created_at', { ascending: false }).limit(200);
+      if (S.jobStage === 'open') q = q.not('stage', 'in', '(completed,cancelled)'); else if (S.jobStage !== 'all') q = q.eq('stage', S.jobStage);
+      const { data: jobs = [] } = await q;
+      const filters = `<div class="chipf">${['open', ...JOB_ST, 'all'].map((s) => `<button data-js="${s}" aria-pressed="${S.jobStage === s}">${label(s)}</button>`).join('')}</div>`;
+      const tech = (id: string) => S.staff.find((s) => s.user_id === id)?.name || '';
+      const list = jobs!.length ? jobs!.map((j) => `<button data-job="${j.id}" aria-current="${S.sel === j.id}">
+        <span class="t">${esc(j.number)} · ${esc(j.title)}</span><span class="pill mute">${label(j.stage)}</span>
+        <span class="m">${pri(j.priority)}${esc(j.organizations?.name || '')}${j.sites ? ' · ' + esc(j.sites.name) : ''}${j.scheduled_start ? ' · ' + when(j.scheduled_start) : ''}${j.tech_id ? ' · ' + esc(tech(j.tech_id)) : ''}</span></button>`).join('') : '<p class="empty">No jobs here.</p>';
+      const cur = jobs!.find((j) => j.id === S.sel);
+      return filters + `<div class="cols"><div class="rows">${list}</div><div>${cur ? await jobDetail(cur) : '<p class="empty card">Pick a job.</p>'}</div></div>`;
+    }
+
+    async function jobDetail(j: Row) {
+      return `<div class="card detail">
+        <div class="row sp"><h2 style="font-size:1.3rem">${esc(j.number)} · ${esc(j.title)}</h2>${pri(j.priority)}</div>
+        <p class="muted small">${esc(j.organizations?.name || 'No client')}${j.sites ? ' · ' + esc(j.sites.name) + ', ' + esc(j.sites.address) : ''}</p>
+        <div class="inline">
+          <div class="field"><label for="jst">Stage</label><select id="jst" data-job-f="stage">${opts(JOB_ST, j.stage)}</select></div>
+          <div class="field"><label for="jkd">Kind</label><select id="jkd" data-job-f="kind">${opts(['survey', 'install', 'service', 'maintenance', 'programming'], j.kind)}</select></div>
+          <div class="field"><label for="jpr">Priority</label><select id="jpr" data-job-f="priority">${opts(['emergency', 'urgent', 'routine'], j.priority)}</select></div>
+        </div>
+        <div class="inline">
+          <div class="field"><label for="jtc">Technician</label><select id="jtc" data-job-f="tech_id"><option value="">Not assigned</option>${S.staff.map((s) => `<option value="${s.user_id}"${s.user_id === j.tech_id ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+          <div class="field"><label for="jss">Start</label><input id="jss" type="datetime-local" data-job-f="scheduled_start" value="${localInput(j.scheduled_start)}"></div>
+          <div class="field"><label for="jse">End</label><input id="jse" type="datetime-local" data-job-f="scheduled_end" value="${localInput(j.scheduled_end)}"></div>
+        </div>
+        ${j.description ? `<dl class="kv"><dt>Details</dt><dd>${esc(j.description)}</dd></dl>` : ''}
+        <h3>Notes</h3>${await notesFor('job_id', j.id)}</div>`;
+    }
+
+    // Clients ---------------------------------------------------------------
+    const SERVICES = ['video-surveillance', 'access-control', 'alarm-systems', 'intercom-entry', 'audio-video', 'networking-cabling', 'building-automation', 'system-integration'];
+    async function clientsView() {
+      const { data: orgs = [] } = await sb!.from('organizations').select('*, org_members(email,role), sites(id,name,address,plan,plan_status,systems(id,name,status,qr))').order('name');
+      if (!orgs!.length) return '<p class="empty card">No clients yet. Create one from a lead.</p>';
+      const base = location.pathname.replace(/admin\/?$/, '');
+      return `<div class="grid g2">${orgs!.map((o) => `<div class="card stack" style="gap:12px;align-content:start"><div class="row sp"><h2 style="font-size:1.15rem">${esc(o.name)}</h2><span class="pill mute">${label(o.kind)}</span></div>
+        <p class="small muted">${esc([o.billing_email, o.phone].filter(Boolean).join(' · '))}</p>
+        ${(o.sites || []).map((s: Row) => `<div class="stack small" style="gap:6px;border-top:1px solid var(--line2);padding-top:10px">
+          <div class="row sp"><span><b>${esc(s.name)}</b> · ${esc(s.address)}</span><span class="pill mute">${esc(s.plan)}${s.plan_status !== 'none' ? ' · ' + esc(s.plan_status) : ''}</span></div>
+          <div class="row">${(s.systems || []).map((x: Row) => `<a class="pill ${x.status === 'ok' ? 'ok' : x.status === 'bad' ? 'bad' : 'warn'}" href="${base}r/?q=${x.qr}" target="_blank" rel="noopener" title="Open the QR report page">${esc(x.name)}</a>`).join('') || '<span class="muted">No systems recorded</span>'}</div>
+          <form class="inline" data-add-system="${s.id}"><div class="field"><label class="sr" for="as-${s.id}">Service</label><select id="as-${s.id}" name="service">${SERVICES.map((v) => `<option value="${v}">${label(v.replace(/-/g, ' '))}</option>`).join('')}</select></div><div class="field"><label class="sr" for="an-${s.id}">System name</label><input id="an-${s.id}" name="name" type="text" placeholder="Lobby video intercom" required></div><button class="btn sm ghost">Add system</button></form>
+          ${(s.systems || []).length ? `<a class="small" href="${base}admin/stickers/?site=${s.id}" target="_blank" rel="noopener">Print QR stickers</a>` : ''}
+        </div>`).join('')}
+        <div class="stack small" style="gap:6px;border-top:1px solid var(--line2);padding-top:10px"><b>Portal users</b>
+          ${(o.org_members || []).map((m: Row) => `<span>${esc(m.email || 'user')} · ${esc(m.role)}</span>`).join('') || '<span class="muted">Nobody yet</span>'}
+          <form class="inline" data-invite="${o.id}"><div class="field"><label class="sr" for="ie-${o.id}">Email</label><input id="ie-${o.id}" name="email" type="email" placeholder="manager@client.com" required></div><div class="field" style="flex:0 1 130px"><label class="sr" for="ir-${o.id}">Role</label><select id="ir-${o.id}" name="role">${['admin', 'manager', 'super', 'billing', 'viewer'].map((r) => `<option>${r}</option>`).join('')}</select></div><button class="btn sm ghost">Invite</button></form>
+        </div>
+      </div>`).join('')}</div>`;
+    }
+
+    // Events ----------------------------------------------------------------
+    app.addEventListener('click', async (e) => {
+      const t = (e.target as Element).closest<HTMLElement>('button');
+      if (!t) return;
+      const d = t.dataset;
+      if (d.tab) { S.tab = d.tab; S.sel = ''; return render(); }
+      if (d.ls) { S.leadStatus = d.ls; S.sel = ''; return render(); }
+      if (d.js) { S.jobStage = d.js; S.sel = ''; return render(); }
+      if (d.lead) { S.sel = d.lead; return render(); }
+      if (d.job) { S.sel = d.job; return render(); }
+      if (d.convert) {
+        const { data, error } = await sb!.rpc('convert_lead', { p_lead: d.convert, p_job_kind: d.kind });
+        if (error) return toast(error.message);
+        S.tab = 'jobs'; S.jobStage = 'open'; S.sel = data as string; toast('Client and job created'); return render();
+      }
+    });
+    app.addEventListener('change', async (e) => {
+      const t = e.target as HTMLInputElement;
+      const d = t.dataset;
+      let res;
+      if (d.leadStatus) res = await sb!.from('leads').update({ status: t.value }).eq('id', d.leadStatus);
+      else if (d.leadOwner) res = await sb!.from('leads').update({ assigned_to: t.value || null }).eq('id', d.leadOwner);
+      else if (d.leadNext) res = await sb!.from('leads').update({ next_action_at: t.value ? new Date(t.value).toISOString() : null }).eq('id', d.leadNext);
+      else if (d.jobF) {
+        const v = t.type === 'datetime-local' ? (t.value ? new Date(t.value).toISOString() : null) : (t.value || null);
+        const patch: Row = { [d.jobF]: v };
+        if (d.jobF === 'tech_id' && v) { const st = (document.getElementById('jst') as HTMLSelectElement).value; if (st === 'received' || st === 'scheduled') patch.stage = 'assigned'; }
+        res = await sb!.from('jobs').update(patch).eq('id', S.sel);
+      } else return;
+      if (res?.error) return toast(res.error.message);
+      toast('Saved'); render();
+    });
+    app.addEventListener('submit', async (e) => {
+      const f = e.target as HTMLFormElement;
+      const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement)?.value || '').trim();
+      if (f.dataset.addSystem) {
+        e.preventDefault();
+        const { error } = await sb!.from('systems').insert({ site_id: f.dataset.addSystem, service: v('service'), name: v('name') });
+        if (error) return toast(error.message);
+        toast('System added'); return render();
+      }
+      if (f.dataset.invite) {
+        e.preventDefault();
+        const { data, error } = await sb!.functions.invoke('invite-member', { body: { org_id: f.dataset.invite, email: v('email'), role: v('role') } });
+        if (error || data?.error) return toast(data?.error || 'Invitations need the invite-member function deployed (docs/ops.md).');
+        toast('Invitation sent'); return render();
+      }
+      if (!f.dataset.note) return;
+      e.preventDefault();
+      const [col, id] = f.dataset.note.split(':');
+      const body = (f.querySelector('input[type=text]') as HTMLInputElement).value.trim();
+      if (!body) return;
+      const cv = (f.querySelector('input[name=cv]') as HTMLInputElement | null)?.checked ?? false;
+      const { error } = await sb!.from('notes').insert({ [col]: id, body, client_visible: cv, author_name: S.me?.name });
+      if (error) return toast(error.message);
+      render();
+    });
+  </script>
+</body>
+</html>

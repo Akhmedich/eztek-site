@@ -1,0 +1,24 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { SERVICES } from '../../data/services';
+import { u } from '../../lib/url';
+---
+<Layout title="Low-Voltage Services in NYC" description="Video surveillance, access control, alarms, video intercoms, audio-video, structured cabling, automation, integration and maintenance across New York City.">
+  <PageHero eyebrow="Services" title="Design, installation, programming and service" lede="We design and install new systems, maintain and upgrade existing ones, and connect them so they work as one." crumbs={[['Services', '/services/']]} />
+  <section class="band"><div class="wrap">
+    <div class="grid g3">
+      {SERVICES.map((s) => (
+        <a class="card stack" href={u(`/services/${s.slug}/`)} style="align-content:start">
+          <Icon name={s.icon} size={34} />
+          <h2 style="font-size:1.3rem">{s.name}</h2>
+          <p class="muted small">{s.desc}</p>
+          <ul class="checks" style="margin:0">{s.includes.slice(0, 3).map((i) => <li class="small">{i}</li>)}</ul>
+          <span class="arrow">Details and quote →</span>
+        </a>))}
+    </div>
+  </div></section>
+  <CtaBand />
+</Layout>

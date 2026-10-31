@@ -1,0 +1,23 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { BUILDINGS } from '../../data/buildings';
+import { serviceBySlug } from '../../data/services';
+import { PLANS } from '../../data/plans';
+import { u } from '../../lib/url';
+---
+<Layout title="Systems by Building Type" description="What EZTek installs in rental buildings, condos and co-ops, private homes, offices, stores and schools across New York City.">
+  <PageHero eyebrow="Building types" title="What we install, by building" lede="Codes show the usual NYC occupancy group for each type; your certificate of occupancy has the exact one. Mixed-use buildings get a plan for each part." crumbs={[['Buildings', '/buildings/']]} />
+  <section class="band"><div class="wrap"><div class="grid g3">
+    {BUILDINGS.map((b) => (
+      <a class="btype" href={u(`/buildings/${b.slug}/`)}>
+        <span class="code"><span>OCCUPANCY {b.code}</span><span>{PLANS[b.plan].name} plan</span></span>
+        <h2 style="font-size:1.3rem">{b.name}</h2><p>{b.who}</p>
+        <span class="sysrow">{b.services.map((s) => <i><Icon name={serviceBySlug[s].icon} />{serviceBySlug[s].short}</i>)}</span>
+        <span class="arrow">See what we install →</span>
+      </a>))}
+  </div></div></section>
+  <CtaBand />
+</Layout>

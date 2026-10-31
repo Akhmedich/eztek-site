@@ -1,0 +1,61 @@
+---
+// Building cross-section from the prototype: each system lights up where it is installed
+import { GROUPS } from '../data/services';
+
+const cam = (x: number, y: number, flip = false) => `<g transform="translate(${x} ${y})${flip ? ' scale(-1 1)' : ''}"><path d="M-9-4h12v8h-12z" fill="currentColor" fill-opacity=".25"/><path d="M3-2l6-3v10l-6-3" /></g>`;
+const ap = (x: number, y: number) => `<g transform="translate(${x} ${y})"><circle r="3" fill="currentColor"/><path d="M-7 7a10 10 0 0 1 14 0M-11 11a15 15 0 0 1 22 0" fill="none"/></g>`;
+const dot = (x: number, y: number, bad = false) => `<g transform="translate(${x} ${y})">${bad ? '<circle r="8" fill="none" stroke="#F07A5E" stroke-width="1.5" opacity=".7"/>' : ''}<circle r="4" fill="${bad ? '#F07A5E' : '#4CC08A'}"/></g>`;
+const g = (sys: string, inner: string) => `<g class="dev" data-sys="${sys}" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
+
+const svg = '<svg viewBox="0 0 600 470" role="img" aria-labelledby="riserT riserD">' +
+  '<title id="riserT">Cross-section of a mixed-use building</title><desc id="riserD">A five-level building from cellar to penthouse showing where each EZTek system is installed. The highlighted system changes with the buttons below.</desc>' +
+  '<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v8" stroke="var(--hero-line)" stroke-width="1"/></pattern></defs>' +
+  '<rect x="20" y="360" width="560" height="100" fill="url(#hatch)" opacity=".55"/>' +
+  '<rect x="100" y="360" width="420" height="90" fill="var(--hero)" stroke="var(--hero-line)" stroke-width="1.5"/>' +
+  '<path class="st" d="M100 360V40h420v320M94 40h432M20 360h560" stroke-width="2"/>' +
+  '<path class="st" d="M100 110h420M100 180h420M100 250h420"/>' +
+  '<path class="st" d="M320 110v70M200 268h40v92h-40zM220 268v92M420 296h44v64h-44zM340 230h90" />' +
+  '<text class="lbl lv" x="86" y="80" text-anchor="end">PH</text><text class="lbl lv" x="86" y="150" text-anchor="end">03</text><text class="lbl lv" x="86" y="220" text-anchor="end">02</text><text class="lbl lv" x="86" y="310" text-anchor="end">L</text><text class="lbl lv" x="86" y="410" text-anchor="end">C</text>' +
+  '<text class="lbl" x="512" y="104" text-anchor="end">RESIDENCE · R-3</text><text class="lbl" x="512" y="174" text-anchor="end">APARTMENTS · R-2</text><text class="lbl" x="512" y="244" text-anchor="end">OFFICE · B</text><text class="lbl" x="512" y="354" text-anchor="end">LOBBY</text><text class="lbl" x="512" y="444" text-anchor="end">CELLAR · MDF</text>' +
+  '<text class="lbl" x="24" y="404">FIBER IN</text>' +
+  g('network', '<path d="M140 444V48"/><circle cx="140" cy="110" r="3" fill="currentColor"/><circle cx="140" cy="180" r="3" fill="currentColor"/><circle cx="140" cy="250" r="3" fill="currentColor"/><circle cx="140" cy="360" r="3" fill="currentColor"/><path d="M24 418H156"/><rect x="156" y="378" width="34" height="62"/><path d="M161 390h24M161 400h24M161 410h24M161 420h24M161 430h24"/>' + ap(262, 120) + ap(230, 190) + ap(300, 262) + ap(330, 50)) +
+  g('security', cam(382, 262) + cam(536, 262) + cam(490, 190, true) + cam(296, 122) + cam(270, 374) + '<rect x="406" y="320" width="7" height="13" fill="currentColor" fill-opacity=".25"/>') +
+  g('intercom', '<rect x="470" y="314" width="11" height="20"/><circle cx="475.5" cy="320" r="2"/><path d="M473 327h5M473 330h5"/><rect x="176" y="136" width="9" height="15"/><rect x="438" y="136" width="9" height="15"/><rect x="250" y="76" width="9" height="15"/>') +
+  g('av', '<rect x="152" y="54" width="82" height="38" fill="currentColor" fill-opacity=".12"/><path d="M193 92v6"/><rect x="360" y="194" width="52" height="28" fill="currentColor" fill-opacity=".12"/><circle cx="300" cy="186" r="4"/><circle cx="460" cy="186" r="4"/><path d="M140 62v12M246 62v12"/>') +
+  g('automation', '<rect x="388" y="54" width="32" height="40"/><rect x="428" y="54" width="32" height="40"/><rect x="468" y="54" width="32" height="40"/><path d="M388 62h32M388 68h32M428 62h32M468 62h32M468 68h32M468 74h32"/><circle cx="380" cy="122" r="4"/><circle cx="410" cy="122" r="4"/><path d="M380 110v8M410 110v8"/><rect x="322" y="206" width="12" height="16" rx="2"/><circle cx="328" cy="214" r="3"/>') +
+  g('integration', '<rect x="200" y="394" width="52" height="24"/><circle cx="210" cy="406" r="2" fill="currentColor"/><circle cx="218" cy="406" r="2" fill="currentColor"/><path d="M200 406H150" stroke-dasharray="4 4"/><path d="M146 78H300" stroke-dasharray="4 4"/><rect x="300" y="68" width="16" height="22" fill="currentColor" fill-opacity=".2"/><path d="M146 214H322" stroke-dasharray="4 4"/>') +
+  '<g class="dots" data-sys="maintenance">' + dot(382, 250, true) + dot(536, 248) + dot(475, 306) + dot(173, 370) + dot(193, 46) + dot(444, 46) + dot(386, 186) + dot(226, 388) + dot(262, 106) + '</g>' +
+  '</svg>';
+---
+<figure class="riser" data-riser data-caps={JSON.stringify(Object.fromEntries(GROUPS.map((x) => [x.id, [x.name, x.cap]])))}>
+  <Fragment set:html={svg} />
+  <div class="chips" role="group" aria-label="Show a system">
+    <button class="chip" type="button" data-v="all" aria-pressed="true">All</button>
+    {GROUPS.map((x) => <button class="chip" type="button" data-v={x.id} aria-pressed="false">{x.name}</button>)}
+  </div>
+  <figcaption><b>Seven systems in one building.</b> Pick a system to see where it goes, from the cellar rack to the penthouse.</figcaption>
+</figure>
+
+<script>
+  const fig = document.querySelector<HTMLElement>('[data-riser]');
+  if (fig) {
+    const caps: Record<string, [string, string]> = JSON.parse(fig.dataset.caps!);
+    const cap = fig.querySelector('figcaption')!;
+    const allCap = cap.innerHTML;
+    const set = (a: string) => {
+      fig.querySelectorAll<SVGElement>('[data-sys]').forEach((el) => {
+        const s = el.getAttribute('data-sys');
+        el.classList.toggle('on', a === 'all' ? s !== 'maintenance' : a === 'maintenance' || s === a);
+      });
+      fig.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String((c as HTMLElement).dataset.v === a)));
+      if (a === 'all') cap.innerHTML = allCap;
+      else { cap.textContent = ''; const b = document.createElement('b'); b.textContent = caps[a][0] + '. '; cap.append(b, caps[a][1]); }
+    };
+    const order = ['all', ...Object.keys(caps)];
+    let i = 0;
+    let timer: number | undefined;
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) timer = window.setInterval(() => { i = (i + 1) % order.length; set(order[i]); }, 2800);
+    fig.querySelectorAll<HTMLElement>('.chip').forEach((c) => c.addEventListener('click', () => { clearInterval(timer); set(c.dataset.v!); }));
+    set('all');
+  }
+</script>

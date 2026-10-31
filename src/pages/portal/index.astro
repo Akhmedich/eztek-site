@@ -1,0 +1,255 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import '../../styles/app.css';
+import { company } from '../../data/company';
+import { PLANS } from '../../data/plans';
+import { u } from '../../lib/url';
+
+const features = [
+  { i: 'maintenance', t: 'Service requests', d: 'Open a request, follow every stage and read the technician notes.' },
+  { i: 'qr', t: 'QR on every device', d: 'Scan the sticker on a camera, reader or panel to report it. We know which device and where.' },
+  { i: 'automation', t: 'Systems by building', d: 'Every system with status and warranty dates.' },
+  { i: 'card', t: 'Plans and billing', d: 'Start or change a care plan, pay invoices by card or bank, set up autopay.' },
+  { i: 'doc', t: 'Documents', d: 'As-builts, reports, warranties and certificates of insurance.' },
+  { i: 'users', t: 'Your team', d: 'Managers, supers, bookkeepers and board members with the right access.' },
+];
+const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { name: p.name, price: p.price, from: p.from }]));
+---
+<Layout title="Client Portal" description="Sign in to the EZTek client portal: service requests, systems, care plans, invoices and documents for every building.">
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)" id="portal" data-plans={JSON.stringify(plans)} data-tel={company.phone} data-phone={company.phoneDisplay} data-admin={u('/admin/')}>
+    <div class="wrap split" style="align-items:start" data-out>
+      <div class="card stack" style="padding:clamp(20px,3vw,32px);max-width:480px" id="login">
+        <p class="eyebrow">Client portal</p>
+        <h1 style="font-size:clamp(1.7rem,3vw,2.2rem)">Sign in</h1>
+        <p class="muted small">We email you a one-time sign-in link. No password to remember.</p>
+        <form class="stack" novalidate data-form>
+          <div class="field"><label for="p-email">Work email</label><input id="p-email" type="email" autocomplete="email" name="email"></div>
+          <p class="err" role="alert" data-err></p>
+          <button class="btn" type="submit">Email me a sign-in link</button>
+        </form>
+        <div class="note" data-sent hidden tabindex="-1"></div>
+        <a class="btn ghost" href={u('/prototype/') + '#portal'}>Explore the demo portal</a>
+        <p class="small muted">New client? Your account is set up after the first project or care plan. <a href={u('/contact/')}>Contact us</a> · <a href={`tel:${company.phone}`}>{company.phoneDisplay}</a></p>
+      </div>
+      <div>
+        <h2 style="font-size:1.6rem;margin-bottom:20px">Everything about your buildings, in one place</h2>
+        <div class="grid g2">{features.map((f) => <div class="stack" style="gap:8px"><Icon name={f.i} size={28} /><h3>{f.t}</h3><p class="muted small">{f.d}</p></div>)}</div>
+      </div>
+    </div>
+    <div class="wrap stack" style="gap:18px" data-in hidden aria-live="polite"></div>
+  </section>
+</Layout>
+
+<script>
+  import { sb, esc, ago, when } from '../../lib/supabase';
+
+  type Row = Record<string, any>;
+  const root = document.getElementById('portal')!;
+  const PLANS = JSON.parse(root.dataset.plans!) as Record<string, { name: string; price: number; from: boolean }>;
+  const out = root.querySelector<HTMLElement>('[data-out]')!;
+  const app = root.querySelector<HTMLElement>('[data-in]')!;
+  const login = document.getElementById('login')!;
+  const STAGES = ['received', 'scheduled', 'assigned', 'on_site', 'completed'];
+  const STAGE_NAME: Record<string, string> = { received: 'Received', scheduled: 'Scheduled', assigned: 'Tech assigned', on_site: 'On site', completed: 'Completed', cancelled: 'Cancelled' };
+  const S = { org: '' as string, orgs: [] as Row[], data: {} as Row, open: '' as string, newReq: null as Row | null, msg: '' };
+  const money = (n: number) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const statusPill = (s: string) => `<span class="pill ${s === 'ok' ? 'ok' : s === 'bad' ? 'bad' : s === 'warn' ? 'warn' : 'mute'}">${{ ok: 'Working', warn: 'Needs attention', bad: 'Down', unknown: 'Unknown' }[s] || s}</span>`;
+  const planPill = (s: Row) => s.plan === 'none' ? '<span class="pill mute">No plan</span>' : `<span class="pill ${s.plan_status === 'active' ? 'ok' : s.plan_status === 'past_due' ? 'bad' : 'warn'}">${esc(PLANS[s.plan]?.name || s.plan)}${s.plan_status !== 'active' ? ' · ' + esc(s.plan_status.replace('_', ' ')) : ''}</span>`;
+
+  // Sign-in -------------------------------------------------------------------
+  login.querySelector('form')!.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = (login.querySelector('#p-email') as HTMLInputElement).value.trim();
+    const err = login.querySelector<HTMLElement>('[data-err]')!;
+    const sent = login.querySelector<HTMLElement>('[data-sent]')!;
+    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter the email you use with EZTek.'; return; }
+    err.textContent = '';
+    if (!sb) { sent.innerHTML = '<span class="draft">Preview</span><span>Sign-in opens when the portal is connected. Until then, explore the demo account.</span>'; }
+    else {
+      // existing accounts only: clients are invited by EZTek
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href.split('#')[0].split('?')[0], shouldCreateUser: false } });
+      sent.innerHTML = error ? `<span>We could not find a portal account for this email. Call ${esc(root.dataset.phone)} and we will set it up.</span>` : '<span>Check your email and open the link on this device.</span>';
+    }
+    sent.hidden = false; sent.focus();
+  });
+
+  if (sb) start();
+
+  async function start() {
+    const { data: { session } } = await sb!.auth.getSession();
+    sb!.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') location.reload(); });
+    if (!session) return;
+    out.hidden = true; app.hidden = false;
+    const { data: staff } = await sb!.from('staff').select('user_id').eq('user_id', session.user.id).maybeSingle();
+    const { data: orgs } = await sb!.from('portal_summary').select('*').order('name');
+    S.orgs = orgs || [];
+    if (!S.orgs.length) {
+      app.innerHTML = `<div class="card stack" style="max-width:560px"><h1 style="font-size:1.5rem">No buildings on this account yet</h1>
+        <p class="muted">${staff ? `You are EZTek staff. <a href="${esc(root.dataset.admin)}">Open the dashboard</a>.` : `Signed in as ${esc(session.user.email)}. Call ${esc(root.dataset.phone)} and we will connect your account.`}</p>
+        <button class="btn ghost" data-act="out">Sign out</button></div>`;
+      return;
+    }
+    S.org = S.orgs[0].org_id;
+    const p = new URLSearchParams(location.search).get('billing');
+    if (p === 'success') S.msg = 'Thank you. Your care plan starts as soon as the payment clears.';
+    if (p === 'canceled') S.msg = 'Checkout canceled. Nothing was charged.';
+    await load();
+    window.addEventListener('hashchange', render);
+  }
+
+  async function load() {
+    const [sites, jobs, invoices] = await Promise.all([
+      sb!.from('sites').select('*, systems(*)').eq('org_id', S.org).order('name'),
+      sb!.from('jobs').select('*, sites(name), systems(name), staff(name)').eq('org_id', S.org).order('created_at', { ascending: false }).limit(100),
+      sb!.from('invoices').select('*').eq('org_id', S.org).order('created_at', { ascending: false }),
+    ]);
+    S.data = { sites: sites.data || [], jobs: jobs.data || [], invoices: invoices.data || [] };
+    const { data: sum } = await sb!.from('portal_summary').select('*').eq('org_id', S.org).single();
+    S.data.sum = sum;
+    render();
+  }
+
+  const tab = () => (location.hash.slice(1) || 'home');
+  function render() {
+    const t = tab();
+    const org = S.orgs.find((o) => o.org_id === S.org)!;
+    const nav = [['home', 'Overview'], ['requests', 'Requests'], ['buildings', 'Buildings'], ['billing', 'Billing']]
+      .map(([id, n]) => `<a href="#${id}" aria-current="${t === id ? 'page' : 'false'}">${n}</a>`).join('');
+    const pick = S.orgs.length > 1 ? `<select data-org aria-label="Account">${S.orgs.map((o) => `<option value="${o.org_id}"${o.org_id === S.org ? ' selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : '';
+    const body = t === 'requests' ? requests() : t === 'buildings' ? buildings() : t === 'billing' ? billing() : home();
+    app.innerHTML = `<div class="row sp"><div><p class="eyebrow">Client portal</p><h1 style="font-size:clamp(1.6rem,3vw,2.1rem);margin-top:6px">${esc(org.name)}</h1></div>
+      <div class="row">${pick}<button class="btn" data-act="new">New request</button><button class="btn ghost sm" data-act="out">Sign out</button></div></div>
+      ${S.msg ? `<div class="note">${esc(S.msg)}</div>` : ''}
+      <nav class="app-nav" aria-label="Portal">${nav}</nav>${S.newReq ? newReqForm() : ''}${body}`;
+  }
+
+  function home() {
+    const s = S.data.sum || {};
+    const k = (name: string, v: string, alert = false) => `<div class="card${alert ? ' alert' : ''}"><span class="k">${name}</span><span class="v">${v}</span></div>`;
+    const open = S.data.jobs.filter((j: Row) => !['completed', 'cancelled'].includes(j.stage));
+    const attention = S.data.sites.flatMap((x: Row) => (x.systems || []).filter((y: Row) => y.status === 'warn' || y.status === 'bad').map((y: Row) => ({ ...y, site: x.name })));
+    return `<div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">${k('Open requests', String(s.open_requests ?? 0))}${k('Need attention', String(s.needs_attention ?? 0), !!s.needs_attention)}${k('Next visit', s.next_visit ? new Date(s.next_visit).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—')}${k('Balance due', money(s.balance_due ?? 0), Number(s.balance_due) > 0)}</div>
+      <div class="cols"><div class="stack"><h2 style="font-size:1.2rem">Open requests</h2>${open.length ? `<div class="rows">${open.slice(0, 5).map(jobRow).join('')}</div>` : '<p class="empty card">Nothing open. Everything is working.</p>'}</div>
+      <div class="stack"><h2 style="font-size:1.2rem">Needs attention</h2>${attention.length ? attention.map((y: Row) => `<div class="card row sp"><span><b>${esc(y.name)}</b><br><span class="small muted">${esc(y.site)}${y.status_note ? ' · ' + esc(y.status_note) : ''}</span></span>${statusPill(y.status)}</div>`).join('') : '<p class="empty card">All systems working.</p>'}</div></div>`;
+  }
+
+  function jobRow(j: Row) {
+    return `<button data-job="${j.id}" aria-current="${S.open === j.id}"><span class="t">${esc(j.number)} · ${esc(j.title)}</span><span class="pill ${j.stage === 'completed' ? 'ok' : j.stage === 'cancelled' ? 'mute' : 'info'}">${STAGE_NAME[j.stage]}</span>
+      <span class="m">${j.priority !== 'routine' ? `<span class="pill ${j.priority === 'emergency' ? 'bad' : 'warn'}">${esc(j.priority)}</span>` : ''}${esc(j.sites?.name || '')}${j.systems ? ' · ' + esc(j.systems.name) : ''} · opened ${ago(j.created_at)}</span></button>`;
+  }
+
+  function requests() {
+    const jobs = S.data.jobs;
+    if (!jobs.length) return '<p class="empty card">No requests yet. Use New request when something needs attention.</p>';
+    const cur = jobs.find((j: Row) => j.id === S.open);
+    return `<div class="cols"><div class="rows">${jobs.map(jobRow).join('')}</div><div>${cur ? jobDetail(cur) : '<p class="empty card">Pick a request to see its progress.</p>'}</div></div>`;
+  }
+
+  function jobDetail(j: Row) {
+    const idx = STAGES.indexOf(j.stage);
+    return `<div class="card detail"><h2 style="font-size:1.25rem">${esc(j.number)} · ${esc(j.title)}</h2>
+      ${j.stage === 'cancelled' ? '<p class="pill mute">Cancelled</p>' : `<ol class="timeline">${STAGES.map((s, i) => `<li class="${i <= idx ? 'f' : ''}">${STAGE_NAME[s]}</li>`).join('')}</ol>`}
+      <dl class="kv">${[['Building', j.sites?.name], ['System', j.systems?.name], ['Visit', j.scheduled_start ? when(j.scheduled_start) + (j.scheduled_end ? ' – ' + new Date(j.scheduled_end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '') : ''], ['Technician', j.staff?.name], ['Details', j.description]].filter((r) => r[1]).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+      <h3>Updates</h3><div data-notes="${j.id}"><p class="small muted">Loading…</p></div>
+      <form class="inline" data-comment="${j.id}"><div class="field"><label class="sr" for="cm">Message</label><input id="cm" type="text" placeholder="Add a message for the EZTek team" required></div><button class="btn sm">Send</button></form></div>`;
+  }
+
+  async function loadNotes(id: string) {
+    const box = app.querySelector<HTMLElement>(`[data-notes="${id}"]`);
+    if (!box) return;
+    const { data = [] } = await sb!.from('notes').select('*').eq('job_id', id).order('created_at');
+    box.innerHTML = `<div class="note-list">${data!.map((n) => `<div class="note-item cv"><small>${esc(n.author_name || 'EZTek')} · ${ago(n.created_at)}</small>${esc(n.body)}</div>`).join('') || '<p class="small muted">No updates yet.</p>'}</div>`;
+  }
+
+  function buildings() {
+    if (!S.data.sites.length) return '<p class="empty card">No buildings on this account yet.</p>';
+    return `<div class="grid g2">${S.data.sites.map((s: Row) => `<div class="card stack" style="gap:10px;align-content:start">
+      <div class="row sp"><h2 style="font-size:1.15rem">${esc(s.name)}</h2>${planPill(s)}</div><p class="small muted">${esc(s.address)}${s.borough ? ', ' + esc(s.borough) : ''}</p>
+      ${(s.systems || []).length ? `<div class="rows">${s.systems.map((y: Row) => `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--line2)">
+        <span><b>${esc(y.name)}</b>${y.details ? `<br><span class="small muted">${esc(y.details)}</span>` : ''}${y.warranty_until ? `<br><span class="small muted">Warranty to ${new Date(y.warranty_until + 'T12:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>` : ''}</span>
+        <span class="stack" style="gap:6px;justify-items:end">${statusPill(y.status)}<button class="link small" data-act="new" data-site="${s.id}" data-system="${y.id}">Report a problem</button></span></div>`).join('')}</div>` : '<p class="small muted">No systems recorded yet.</p>'}
+    </div>`).join('')}</div>`;
+  }
+
+  function billing() {
+    const sites = S.data.sites;
+    const inv = S.data.invoices;
+    const planBtns = (s: Row) => s.stripe_subscription_id
+      ? `<button class="btn sm ghost" data-act="checkout" data-site="${s.id}" data-plan="${s.plan}">Change or cancel</button>`
+      : ['essential', 'priority'].map((p) => `<button class="btn sm${p === 'priority' ? '' : ' ghost'}" data-act="checkout" data-site="${s.id}" data-plan="${p}">${PLANS[p].name} · ${money(PLANS[p].price).replace('.00', '')}/mo</button>`).join('') + `<button class="btn sm ghost" data-act="managed" data-site="${s.id}">Ask about Managed</button>`;
+    return `<div class="stack"><div class="row sp"><h2 style="font-size:1.2rem">Care plans</h2><button class="btn sm ghost" data-act="billing-portal">Payment methods and autopay</button></div>
+      ${sites.map((s: Row) => `<div class="card row sp"><span><b>${esc(s.name)}</b><br>${planPill(s)}</span><span class="row">${planBtns(s)}</span></div>`).join('') || '<p class="empty card">No buildings yet.</p>'}
+      <h2 style="font-size:1.2rem;margin-top:12px">Invoices</h2>
+      ${inv.length ? `<div class="tbl-wrap"><table><thead><tr><th>Invoice</th><th>Date</th><th>For</th><th class="r">Amount</th><th>Status</th><th></th></tr></thead><tbody>${inv.map((i: Row) => `<tr><td class="mono">${esc(i.number || '—')}</td><td>${new Date(i.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td><td>${esc(i.description || '')}</td><td class="r">${money(i.amount_due)}</td>
+        <td><span class="pill ${i.status === 'paid' ? 'ok' : i.status === 'open' ? 'warn' : 'mute'}">${esc(i.status)}</span></td>
+        <td>${i.status === 'open' && i.hosted_url ? `<a class="btn sm" href="${esc(i.hosted_url)}" target="_blank" rel="noopener">Pay</a>` : ''} ${i.pdf_url ? `<a class="small" href="${esc(i.pdf_url)}" target="_blank" rel="noopener">PDF</a>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty card">No invoices yet.</p>'}
+      <p class="small muted">Payments are processed by Stripe. Card or US bank account (ACH).</p></div>`;
+  }
+
+  function newReqForm() {
+    const r = S.newReq!;
+    const site = S.data.sites.find((s: Row) => s.id === r.site) || S.data.sites[0];
+    const systems = site?.systems || [];
+    return `<form class="card stack" data-newreq style="border-color:var(--fiber)"><div class="row sp"><h2 style="font-size:1.2rem">New request</h2><button type="button" class="link" data-act="cancel-new">Close</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="nr-site">Building</label><select id="nr-site" name="site">${S.data.sites.map((s: Row) => `<option value="${s.id}"${s.id === site?.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+        <div class="field"><label for="nr-sys">System</label><select id="nr-sys" name="system"><option value="">Not sure</option>${systems.map((y: Row) => `<option value="${y.id}"${y.id === r.system ? ' selected' : ''}>${esc(y.name)}</option>`).join('')}</select></div>
+        <div class="field"><label for="nr-pri">How urgent?</label><select id="nr-pri" name="priority"><option value="routine">Routine: can be scheduled</option><option value="urgent">Urgent: important, building is secure</option><option value="emergency">Emergency: building is not secure</option></select></div>
+        <div class="field"><label for="nr-t">Short title</label><input id="nr-t" name="title" type="text" maxlength="120" placeholder="Lobby camera offline"></div>
+        <div class="field full"><label for="nr-d">What is happening?</label><textarea id="nr-d" name="description" placeholder="Since when, what you tried, access notes"></textarea></div>
+      </div>
+      <p class="note" data-emerg hidden>For emergencies also call <a href="tel:${esc(root.dataset.tel)}">${esc(root.dataset.phone)}</a>. A call reaches the dispatcher right away.</p>
+      <p class="err" data-nr-err role="alert"></p><div><button class="btn">Send request</button></div></form>`;
+  }
+
+  async function callFn(name: string, body: Row) {
+    const { data, error } = await sb!.functions.invoke(name, { body });
+    if (error || !data?.url) { S.msg = data?.error || 'Online billing is not set up yet. Call us and we will set up your plan.'; render(); return; }
+    location.href = data.url;
+  }
+
+  app.addEventListener('click', async (e) => {
+    const el = (e.target as Element).closest<HTMLElement>('button');
+    if (!el) return;
+    const d = el.dataset;
+    if (d.job) { S.open = S.open === d.job ? '' : d.job; render(); if (S.open) loadNotes(S.open); return; }
+    if (d.act === 'out') return void sb!.auth.signOut();
+    if (d.act === 'new') { S.newReq = { site: d.site, system: d.system }; S.msg = ''; render(); app.querySelector<HTMLElement>('[data-newreq] input, [data-newreq] select')?.focus(); return; }
+    if (d.act === 'cancel-new') { S.newReq = null; render(); return; }
+    if (d.act === 'checkout') { el.setAttribute('disabled', ''); return callFn('billing-checkout', { site_id: d.site, plan: d.plan }); }
+    if (d.act === 'billing-portal') { el.setAttribute('disabled', ''); return callFn('billing-portal', { org_id: S.org }); }
+    if (d.act === 'managed') {
+      const site = S.data.sites.find((s: Row) => s.id === d.site);
+      const { error } = await sb!.from('jobs').insert({ org_id: S.org, site_id: d.site, title: 'Care plan: Managed', description: `Client asked about the Managed plan for ${site?.name}.` });
+      S.msg = error ? error.message : 'Request sent. Your account manager will call you about the Managed plan.';
+      return load();
+    }
+  });
+  app.addEventListener('change', (e) => {
+    const t = e.target as HTMLSelectElement;
+    if (t.dataset.org !== undefined) { S.org = t.value; S.open = ''; load(); return; }
+    if (t.name === 'site' && S.newReq) { S.newReq.site = t.value; S.newReq.system = ''; render(); }
+    if (t.name === 'priority') app.querySelector<HTMLElement>('[data-emerg]')!.hidden = t.value !== 'emergency';
+  });
+  app.addEventListener('submit', async (e) => {
+    const f = e.target as HTMLFormElement;
+    e.preventDefault();
+    if (f.dataset.comment) {
+      const input = f.querySelector('input')!;
+      const { error } = await sb!.from('notes').insert({ job_id: f.dataset.comment, body: input.value.trim(), client_visible: true, author_name: 'Client' });
+      if (error) { S.msg = error.message; return render(); }
+      input.value = ''; return loadNotes(f.dataset.comment);
+    }
+    if (f.dataset.newreq !== undefined) {
+      const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement).value || '').trim();
+      const err = f.querySelector<HTMLElement>('[data-nr-err]')!;
+      if (!v('title')) { err.textContent = 'Add a short title.'; return; }
+      const { data, error } = await sb!.from('jobs').insert({ org_id: S.org, site_id: v('site') || null, system_id: v('system') || null, priority: v('priority'), title: v('title'), description: v('description') || null }).select('id,number').single();
+      if (error) { err.textContent = error.message; return; }
+      S.newReq = null; S.msg = `Request ${data.number} sent. We will update it here.`; S.open = data.id;
+      location.hash = 'requests';
+      await load(); loadNotes(data.id);
+    }
+  });
+</script>
