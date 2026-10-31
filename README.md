@@ -3,11 +3,11 @@
 Website and client portal for EZTek Solutions, a low-voltage systems integrator in Brooklyn, NY (eztekav.com).
 
 ## Status
-- Phase 1, clickable prototype: `prototype/index.html` (open in a browser, no build step). Prices and portal data are drafts and demo data.
+- Phase 1, clickable prototype: `index.html`, published with GitHub Pages at https://akhmedich.github.io/eztek-site/ (no build step). Prices and portal data are drafts and demo data.
 - Phase 2, production: not started. Planned stack and open questions are in `docs/brief.md`.
 
 ## Structure
-- `prototype/` - single-file prototype: marketing site, quote wizard, service-call form, demo client portal
+- `index.html` - single-file prototype: marketing site, quote wizard, service-call form, demo client portal. Edit on github.com; the site updates in about a minute.
 - `docs/brief.md` - business facts, decisions, benchmarks, items still needed from the owner
 
 ## Rules
@@ -16,8 +16,8 @@ Website and client portal for EZTek Solutions, a low-voltage systems integrator 
 
 ## Preview access and indexing
 The preview must not be indexed or public until the owner approves launch.
-- Gate: Cloudflare Pages behind Cloudflare Access (email one-time PIN), allow list only.
-- Second layer: `noindex` meta tag, `X-Robots-Tag` header (`prototype/_headers`), `robots.txt` with `Disallow: /`.
+- The GitHub Pages link is open to anyone who has it; there is no login.
+- Search engines: `noindex` meta tag in `index.html`, `robots.txt` with `Disallow: /`. `_headers` (X-Robots-Tag) applies only if the site moves to Cloudflare Pages.
 - Remove all three only at launch.
 
 ## Team
