@@ -53,7 +53,10 @@ Claude cannot create accounts or handle keys, so these steps are yours.
 2. **Connect Claude.** In a Claude Code session in this folder, set the project ref (the id in the project URL) as the environment variable `SUPABASE_PROJECT_REF`, then run `/mcp` and sign in to Supabase for the `eztek-ops` server. Claude can then apply the database schema from `supabase/migrations/` itself.
 3. **Sign-in links.** In Supabase: Authentication > URL Configuration. Site URL `https://akhmedich.github.io/eztek-site/`, redirect URLs `https://akhmedich.github.io/eztek-site/admin/` and `https://akhmedich.github.io/eztek-site/portal/` (later the same on eztekav.com).
 4. **Website connection.** In GitHub: repository Settings > Secrets and variables > Actions > Variables. Add `PUBLIC_SUPABASE_URL` (Project Settings > API > URL) and `PUBLIC_SUPABASE_ANON_KEY` (the `anon` public key; it is meant to be public and can only add leads).
-5. **Email copies of leads to mansur@eztek.us.** On web3forms.com click Create your Form, and give `mansur@eztek.us` as the email that receives submissions (sign up with that address if asked, so the account belongs to the company). The access key comes by email and is shown in the Web3Forms dashboard. Add the variables `PUBLIC_FORM_ENDPOINT` = `https://api.web3forms.com/submit` and `PUBLIC_FORM_KEY` = that key.
+5. **Email copies of leads.** One Web3Forms account, owned by the admin (Akhmed's Gmail), so every form can be edited at any time. Two forms in it, each with its own access key:
+   - `eztek – test`: recipient Akhmed's Gmail, site `akhmedich.github.io/eztek-site`.
+   - `eztek – production`: recipient `mansur@eztek.us`, site `eztekav.com`.
+   Variables: `PUBLIC_FORM_ENDPOINT` = `https://api.web3forms.com/submit`, `PUBLIC_FORM_KEY` = one key, or several separated by commas to send a copy to each recipient. During the preview use the test key; at launch use `production-key,test-key` so both Mansur and the admin get every lead.
 6. **Staff.** Mansur opens `/admin/` and signs in with the email link once. Then ask Claude: "add Mansur to staff as admin".
 
 Re-run the deploy (Actions > Build and deploy > Run workflow) after changing variables.
