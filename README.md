@@ -13,3 +13,14 @@ Website and client portal for EZTek Solutions, a low-voltage systems integrator 
 ## Rules
 - Never invent business facts. Missing data stays as a visible placeholder.
 - DNS for eztekav.com: never change MX or TXT records (email runs on Google Workspace). Cutover changes only `A @` and `CNAME www`, with owner approval.
+
+## Preview access and indexing
+The preview must not be indexed or public until the owner approves launch.
+- Gate: Cloudflare Pages behind Cloudflare Access (email one-time PIN), allow list only.
+- Second layer: `noindex` meta tag, `X-Robots-Tag` header (`prototype/_headers`), `robots.txt` with `Disallow: /`.
+- Remove all three only at launch.
+
+## Team
+- Akhmed Bektimirov: admin
+- Mansur (mansur@eztek.us): admin
+- Claude: works through the admin's account in Claude sessions; no separate GitHub account
