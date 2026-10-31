@@ -1,0 +1,65 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import Faqs from '../../components/Faqs.astro';
+import Cases from '../../components/Cases.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { SERVICES, type Service } from '../../data/services';
+import { buildingBySlug } from '../../data/buildings';
+import { AREAS } from '../../data/areas';
+import { company } from '../../data/company';
+import { u, tel } from '../../lib/url';
+
+export function getStaticPaths() {
+  return SERVICES.map((s) => ({ params: { slug: s.slug }, props: { s } }));
+}
+const { s } = Astro.props as { s: Service };
+const related = SERVICES.filter((x) => x.slug !== s.slug && (x.group === s.group || x.slug === 'maintenance-support' || x.slug === 'system-integration')).slice(0, 3);
+const schema = {
+  '@context': 'https://schema.org', '@type': 'Service', name: s.name, serviceType: s.name, description: s.desc,
+  provider: { '@id': new URL(u('/'), Astro.site).href + '#business' },
+  areaServed: AREAS.map((a) => a.name),
+};
+---
+<Layout title={s.seo} description={`${s.desc} ${s.intro.split('. ')[0]}.`} schema={[schema]}>
+  <PageHero eyebrow={`Services · ${s.short}`} title={s.name} lede={s.intro} crumbs={[['Services', '/services/'], [s.name, `/services/${s.slug}/`]]}>
+    <div slot="actions" class="cta-row"><a class="btn lg" href={u(`/quote/?system=${s.slug}`)}>Get a quote</a><a class="btn lg dark-ghost" href={tel}>Call {company.phoneDisplay}</a></div>
+    <div class="hero-card">
+      <span class="k">Sound familiar?</span>
+      <ul class="xlist">{s.signs.map((x) => <li style="color:var(--hero-ink)">{x}</li>)}</ul>
+    </div>
+  </PageHero>
+
+  <section class="band"><div class="wrap svc-cols">
+    <div class="stack" style="gap:40px">
+      <div><h2 style="font-size:1.6rem;margin-bottom:16px">What is included</h2>
+        <ul class="inc">{s.includes.map((i) => <li><Icon name="check" />{i}</li>)}</ul></div>
+      <div><h2 style="font-size:1.6rem;margin-bottom:16px">What you get at handover</h2>
+        <ul class="checks" style="margin:0">{s.deliver.map((i) => <li>{i}</li>)}</ul></div>
+      <div><h2 style="font-size:1.6rem;margin-bottom:16px">Buildings we do this for</h2>
+        <div class="boroughs" style="margin:0">{s.fit.map((b) => <a href={u(`/buildings/${b}/`)}>{buildingBySlug[b].name}</a>)}</div></div>
+      <Faqs faqs={s.faqs} />
+    </div>
+    <aside class="aside">
+      <div class="card stack">
+        <h3>Get a price for {s.short.toLowerCase()}</h3>
+        <p class="muted small">Answer four questions and see a typical price range before we visit. The site survey is free in NYC.</p>
+        <a class="btn" href={u(`/quote/?system=${s.slug}`)}>Start a quote</a>
+        <a class="btn ghost" href={u('/service/')}>Something broken? Request service</a>
+      </div>
+      <div class="card stack">
+        <h3>Someone else installed it?</h3>
+        <p class="muted small">We service systems other companies installed, after a takeover inspection where we test and document everything.</p>
+        <a class="arrow" href={u('/care-plans/')}>See care plans →</a>
+      </div>
+    </aside>
+  </div></section>
+
+  <section class="band alt"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Related</p><h2>Often installed together</h2></div>
+    <div class="grid g3">{related.map((r) => <a class="card stack" href={u(`/services/${r.slug}/`)}><Icon name={r.icon} size={30} /><h3>{r.name}</h3><p class="muted small">{r.desc}</p></a>)}</div>
+    <div style="margin-top:32px"><Cases filter={(p) => p.services.includes(s.slug)} /></div>
+  </div></section>
+  <CtaBand quoteHref={`/quote/?system=${s.slug}`} />
+</Layout>

@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import PlanCards from '../../components/PlanCards.astro';
+import Faqs from '../../components/Faqs.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { PLAN_ROWS, ADDONS } from '../../data/plans';
+import { money } from '../../lib/url';
+
+const faqs = [
+  { q: 'Do I need a plan to get service?', a: 'No. Anyone can book a one-time service call. Plan clients get faster dispatch, lower labor rates and scheduled maintenance.' },
+  { q: 'Will you service a system another company installed?', a: 'Yes, after a takeover inspection where we document what is there, test it and list what needs attention before it goes on a plan.' },
+  { q: 'Who in my company can use the portal?', a: 'You add your own users. Give a super permission to open requests, a bookkeeper access to invoices, and a board member a read-only view.' },
+  { q: 'How do I pay?', a: 'By card or ACH bank transfer in the portal, with autopay if you want it. Invoices for several buildings can be combined into one.' },
+  { q: 'Can we cancel?', a: 'Plans are month-to-month after the first 12 months, with 30 days notice.' }, // PLACEHOLDER terms
+];
+---
+<Layout title="Care Plans: Service Contracts for Building Systems" description="Monthly service plans for security, intercom, network and AV systems: preventive maintenance, faster dispatch, monitoring and lower labor rates, billed per building.">
+  <PageHero eyebrow="Care plans" title="Service plans for every building" lede="Billed per building, per month. Add or change a plan in the client portal at any time; changes start with the next billing cycle." crumbs={[['Care plans', '/care-plans/']]} />
+  <section class="band"><div class="wrap">
+    <PlanCards full />
+    <h2 style="margin:56px 0 16px;font-size:1.5rem">Compare plans</h2>
+    <div class="tbl-wrap"><table class="cmp"><thead><tr><th scope="col">Included</th><th scope="col">Essential</th><th scope="col">Priority</th><th scope="col">Managed</th></tr></thead><tbody>
+      {PLAN_ROWS.map((r) => <tr><td>{r[0]}</td>{r.slice(1).map((v) => <td class={v === '—' ? 'dash' : undefined}>{v}</td>)}</tr>)}
+    </tbody></table></div>
+    <h2 style="margin:56px 0 16px;font-size:1.5rem">Add-ons</h2>
+    <div class="tbl-wrap"><table><thead><tr><th scope="col">Add-on</th><th scope="col">What it does</th><th scope="col" class="r">Price</th></tr></thead><tbody>
+      {ADDONS.map((a) => <tr><td><b>{a.name}</b></td><td class="muted">{a.desc}</td><td class="r">{money(a.price)} / {a.unit} / mo</td></tr>)}
+    </tbody></table></div>
+    <div style="margin-top:56px"><Faqs faqs={faqs} /></div>
+  </div></section>
+  <CtaBand title="Not sure which plan fits?" text="Tell us about the building and the systems in it. We suggest a plan after the takeover inspection." />
+</Layout>

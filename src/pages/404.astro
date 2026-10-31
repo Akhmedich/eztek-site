@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { company } from '../data/company';
+import { u, tel } from '../lib/url';
+---
+<Layout title="Page not found" description="This page does not exist.">
+  <section class="band"><div class="wrap stack" style="max-width:640px">
+    <p class="eyebrow">404</p>
+    <h1 style="font-size:clamp(2rem,4vw,2.8rem)">This cable goes nowhere.</h1>
+    <p class="muted">The page moved or never existed. Try one of these:</p>
+    <div class="row"><a class="btn" href={u('/')}>Home</a><a class="btn ghost" href={u('/services/')}>Services</a><a class="btn ghost" href={u('/service/')}>Request service</a><a class="btn ghost" href={tel}>Call {company.phoneDisplay}</a></div>
+  </div></section>
+</Layout>

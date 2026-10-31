@@ -1,0 +1,23 @@
+// 24x24 stroke icons, drawn with currentColor
+export const ICONS: Record<string, string> = {
+  video: '<path d="M3 8h12v7H3z"/><path d="M15 10l5-3v9l-5-3"/><path d="M7 15v4M4 19h6"/>',
+  access: '<rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M9 7h6"/><circle cx="12" cy="13.5" r="3"/><path d="M12 12.5v2"/>',
+  alarm: '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9.5 12l2 2 3.5-4"/>',
+  intercom: '<rect x="6" y="2.5" width="12" height="19" rx="1.5"/><circle cx="12" cy="7.5" r="2"/><path d="M9 13h6M9 16h6"/>',
+  av: '<rect x="2.5" y="4" width="19" height="12" rx="1"/><path d="M8 20h8M12 16v4"/>',
+  network: '<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M12 7.2v4.3M12 11.5L6.4 16.3M12 11.5l5.6 4.8"/>',
+  automation: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M4 7h16M4 10.5h16M4 14h16"/><path d="M12 14v4"/>',
+  integration: '<circle cx="12" cy="12" r="3"/><circle cx="4" cy="5" r="1.8"/><circle cx="20" cy="5" r="1.8"/><circle cx="4" cy="19" r="1.8"/><circle cx="20" cy="19" r="1.8"/><path d="M5.4 6.3l4.4 3.6M18.6 6.3l-4.4 3.6M5.4 17.7l4.4-3.6M18.6 17.7l-4.4-3.6"/>',
+  maintenance: '<path d="M14.5 3.5a4.5 4.5 0 0 0-4.3 5.9L3.5 16.1a2 2 0 0 0 2.8 2.8l6.7-6.7a4.5 4.5 0 0 0 5.9-4.3l-2.6 2.6-2.8-.6-.6-2.8z"/>',
+  phone: '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3M14 21h1"/>',
+  doc: '<path d="M6 2.5h8l4 4v15H6z"/><path d="M14 2.5v4h4M9 12h6M9 16h6"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M2.5 9.5h19M6 15h4"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.9.3 5 2.5 5 5.8"/>',
+  bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+};

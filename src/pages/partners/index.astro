@@ -1,0 +1,25 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import SimpleForm from '../../components/SimpleForm.astro';
+
+const groups = [ // PLACEHOLDER: bid turnaround and referral terms
+  { icon: 'doc', t: 'General contractors', d: 'Pricing from drawings, scope letters, a schedule that follows yours, and closeout with as-builts and test reports.', items: ['Bid within 5 business days of complete drawings', 'Coordination meetings and RFIs answered', 'Labeled, tested and documented at closeout'] },
+  { icon: 'integration', t: 'Architects & designers', d: 'Low-voltage design support from schematic design: device layouts, riser diagrams, rack and closet sizing.', items: ['Device and speaker layouts on your backgrounds', 'Backing, conduit and power requirements early', 'Product options that fit the finish schedule'] },
+  { icon: 'users', t: 'Property managers & supers', d: 'One vendor for every low-voltage system in your portfolio, with a portal for all buildings.', items: ['One account for every building you manage', 'Super-level access limited to one building', 'Referral credit for buildings you bring'] },
+];
+---
+<Layout title="For Contractors, Architects and Property Managers" description="Low-voltage subcontracting for general contractors, design support for architects, and portfolio service for property managers in NYC.">
+  <PageHero eyebrow="Partners" title="Your low-voltage partner on every job" lede="We work as a subcontractor, a design consultant or a portfolio service vendor. Clear scopes, real schedules, complete closeout." crumbs={[['Partners', '/partners/']]} />
+  <section class="band"><div class="wrap">
+    <div class="grid g3">{groups.map((g) => (
+      <div class="card stack" style="align-content:start"><Icon name={g.icon} size={30} /><h2 style="font-size:1.3rem">{g.t}</h2><p class="muted small">{g.d}</p><ul class="checks" style="margin:0">{g.items.map((i) => <li class="small">{i}</li>)}</ul></div>))}
+    </div>
+    <p class="small muted" style="margin-top:16px"><span class="draft">Draft</span> Bid turnaround and referral terms are examples to confirm.</p>
+  </div></section>
+  <section class="band alt"><div class="wrap split" style="align-items:start">
+    <div><p class="eyebrow">Send a bid request</p><h2 style="margin-top:12px">Drawings, scope or a portfolio question.</h2><p class="muted" style="margin-top:12px">Share a link to drawings in the message (Dropbox, Google Drive, Procore). We confirm receipt the same day.</p></div>
+    <SimpleForm kind="Partner" prefix="P" companyLabel="Company" topics={['Bid request from drawings', 'Design support', 'Portfolio service for managed buildings', 'Referral', 'Other']} submit="Send request" />
+  </div></section>
+</Layout>

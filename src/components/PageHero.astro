@@ -1,0 +1,19 @@
+---
+import { u } from '../lib/url';
+interface Props { eyebrow: string; title: string; lede?: string; crumbs?: [string, string][] }
+const { eyebrow, title, lede, crumbs = [] } = Astro.props;
+const all: [string, string][] = [['Home', '/'], ...crumbs];
+const schema = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: all.map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(u(path), Astro.site).href })) };
+---
+<section class="phero"><div class="wrap phero-grid">
+  <div>
+    {crumbs.length > 0 && <nav aria-label="Breadcrumb"><ol class="crumbs">{all.map(([n, p], i) => <li>{i < all.length - 1 ? <a href={u(p)}>{n}</a> : <span aria-current="page">{n}</span>}</li>)}</ol></nav>}
+    <p class="eyebrow">{eyebrow}</p>
+    <h1>{title}</h1>
+    {lede && <p class="lede">{lede}</p>}
+    <slot name="actions" />
+  </div>
+  <div><slot /></div>
+</div>
+{crumbs.length > 0 && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
+</section>

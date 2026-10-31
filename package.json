@@ -1,0 +1,14 @@
+{
+  "name": "eztek-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check:launch": "node scripts/check-launch.mjs"
+  },
+  "dependencies": {
+    "astro": "5.18.2"
+  }
+}

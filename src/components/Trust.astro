@@ -1,0 +1,7 @@
+---
+import { stats, rating } from '../data/company';
+---
+<section class="trust" aria-label="EZTek in numbers"><div class="wrap trust-in">
+  {stats.slice(0, 3).map((s) => <div><span class="v">{s.v}</span><span class="k">{s.k}</span></div>)}
+  <div><span class="v">{rating.value} <span class="stars" aria-hidden="true">★★★★★</span></span><span class="k">{rating.count} {rating.source} reviews</span></div>
+</div></section>

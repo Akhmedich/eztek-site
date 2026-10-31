@@ -1,0 +1,54 @@
+---
+// Short lead form for contact and partner pages
+interface Props { kind: string; prefix: string; topics: string[]; submit?: string; companyLabel?: string }
+const { kind, prefix, topics, submit = 'Send message', companyLabel = 'Company or building' } = Astro.props;
+const id = `f-${prefix.toLowerCase()}`;
+---
+<div class="card" style="padding:clamp(18px,3vw,28px)" data-simple={kind} data-prefix={prefix}>
+  <form class="stack" style="gap:16px" novalidate>
+    <div class="form-grid">
+      <div class="field"><label for={`${id}-name`}>Your name</label><input id={`${id}-name`} name="name" type="text" autocomplete="name"></div>
+      <div class="field"><label for={`${id}-co`}>{companyLabel} <span class="muted">(optional)</span></label><input id={`${id}-co`} name="company" type="text" autocomplete="organization"></div>
+      <div class="field"><label for={`${id}-email`}>Email</label><input id={`${id}-email`} name="email" type="email" autocomplete="email"></div>
+      <div class="field"><label for={`${id}-phone`}>Phone <span class="muted">(optional)</span></label><input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel"></div>
+      <div class="field full"><label for={`${id}-topic`}>Topic</label><select id={`${id}-topic`} name="topic">{topics.map((t) => <option>{t}</option>)}</select></div>
+      <div class="field full"><label for={`${id}-msg`}>Message</label><textarea id={`${id}-msg`} name="message"></textarea></div>
+    </div>
+    <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+    <p class="err" role="alert"></p>
+    <div><button class="btn" type="submit">{submit}</button></div>
+  </form>
+  <div class="stack" data-done hidden tabindex="-1">
+    <p class="eyebrow">Sent</p>
+    <h3>Thanks. We reply within one business day.</h3>
+    <p>Reference <span class="mono" data-ref></span></p>
+    <p class="note" data-preview hidden><span class="draft">Preview</span><span>This preview does not send messages yet.</span></p>
+  </div>
+</div>
+
+<script>
+  import { sendLead } from '../scripts/lead';
+  document.querySelectorAll<HTMLElement>('[data-simple]').forEach((box) => {
+    const form = box.querySelector('form')!;
+    const err = box.querySelector<HTMLElement>('.err')!;
+    const val = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement)?.value ?? '').trim();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const m = !val('name') ? 'Add your name.' : !/^\S+@\S+\.\S+$/.test(val('email')) ? 'Add a valid email.' : !val('message') ? 'Write a short message.' : '';
+      if (m) { err.textContent = m; return; }
+      const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+      btn.disabled = true;
+      const fields: Record<string, string> = {};
+      ['name', 'company', 'email', 'phone', 'topic', 'message'].forEach((k) => (fields[k] = val(k)));
+      const r = await sendLead(box.dataset.simple!, box.dataset.prefix!, fields, val('website'));
+      btn.disabled = false;
+      if (!r.ok) { err.textContent = 'Could not send. Please call or email us.'; return; }
+      form.hidden = true;
+      const done = box.querySelector<HTMLElement>('[data-done]')!;
+      done.hidden = false;
+      box.querySelector('[data-ref]')!.textContent = r.id;
+      box.querySelector<HTMLElement>('[data-preview]')!.hidden = !r.preview;
+      done.focus();
+    });
+  });
+</script>

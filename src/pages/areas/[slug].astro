@@ -1,0 +1,38 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { AREAS, type Area } from '../../data/areas';
+import { SERVICES } from '../../data/services';
+import { BUILDINGS } from '../../data/buildings';
+import { company } from '../../data/company';
+import { u, tel } from '../../lib/url';
+
+export function getStaticPaths() {
+  return AREAS.map((a) => ({ params: { slug: a.slug }, props: { a } }));
+}
+const { a } = Astro.props as { a: Area };
+---
+<Layout title={`Security, Intercom and Network Installers in ${a.name}`} description={`Cameras, access control, video intercoms, AV and structured cabling in ${a.name}: ${a.hoods.slice(0, 6).join(', ')} and more. ${a.note}`}>
+  <PageHero eyebrow={`Service areas · ${a.name}`} title={`Low-voltage systems in ${a.name}`} lede={a.note} crumbs={[['Areas', '/areas/'], [a.name, `/areas/${a.slug}/`]]}>
+    <div slot="actions" class="cta-row"><a class="btn lg" href={u('/quote/')}>Book a site survey</a><a class="btn lg dark-ghost" href={tel}>Call {company.phoneDisplay}</a></div>
+    <div class="hero-card">
+      <span class="k">Dispatch target for plan clients</span>
+      <p style="color:var(--hero-ink);font:700 1.4rem var(--f-display)">{a.eta}</p>
+      <span class="k">Neighborhoods</span>
+      <p style="color:var(--hero-ink)" class="small">{a.hoods.join(' · ')}</p>
+    </div>
+  </PageHero>
+  <section class="band"><div class="wrap">
+    <div class="sec-head"><h2>Services in {a.name}</h2></div>
+    <div class="sys-grid">{SERVICES.map((s) => <a class="sys-tile" href={u(`/services/${s.slug}/`)}><Icon name={s.icon} /><h3>{s.name}</h3><p>{s.desc}</p></a>)}</div>
+  </div></section>
+  <section class="band alt"><div class="wrap">
+    <div class="sec-head"><h2>Buildings we work in</h2></div>
+    <div class="boroughs" style="margin:0">{BUILDINGS.map((b) => <a href={u(`/buildings/${b.slug}/`)}>{b.name}</a>)}</div>
+    <h3 style="margin:36px 0 12px">Other areas</h3>
+    <div class="boroughs" style="margin:0">{AREAS.filter((x) => x.slug !== a.slug).map((x) => <a href={u(`/areas/${x.slug}/`)}>{x.name}</a>)}</div>
+  </div></section>
+  <CtaBand />
+</Layout>

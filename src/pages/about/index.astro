@@ -1,0 +1,41 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Trust from '../../components/Trust.astro';
+import Icon from '../../components/Icon.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import { company, yearsInBusiness, credentials, brands } from '../../data/company';
+
+const values = [
+  { t: 'One number to call', d: 'Security, entry, network and AV from one team. No finger-pointing between vendors.' },
+  { t: 'Documented, every time', d: 'Labeled cables, as-built drawings and a written report after each visit, saved to your portal.' },
+  { t: 'You own your system', d: 'Passwords, program files and drawings are handed over. You are never locked to us.' },
+  { t: 'Built for buildings people live in', d: 'Work scheduled around residents and tenants, with notice and clean-up.' },
+];
+const team = [ // PLACEHOLDER: real names, roles and photos
+  { n: 'Founder & president', r: 'Company leadership and key accounts' },
+  { n: 'Operations manager', r: 'Scheduling, dispatch and service quality' },
+  { n: 'Lead systems engineer', r: 'Design, programming and integration' },
+  { n: 'Client success', r: 'Care plans, portal accounts and billing' },
+];
+---
+<Layout title="About EZTek Solutions" description={`EZTek Solutions is a Brooklyn low-voltage systems integrator founded in ${company.founded}, serving residential, commercial, multifamily, educational and institutional properties in the New York metro area.`}>
+  <PageHero eyebrow="About" title={`${yearsInBusiness} years of wiring New York buildings`} lede={`EZTek Solutions was founded in ${company.founded} in Brooklyn. We design, install, program, integrate and service electronic security, audiovisual, communication and building automation systems.`} crumbs={[['About', '/about/']]} />
+  <Trust />
+  <section class="band"><div class="wrap split" style="align-items:start">
+    <div><p class="eyebrow">How we work</p><h2 style="margin-top:12px">What owners and managers can count on.</h2></div>
+    <div class="grid g2">{values.map((v) => <div class="card stack" style="gap:8px"><h3>{v.t}</h3><p class="muted small">{v.d}</p></div>)}</div>
+  </div></section>
+  <section class="band alt"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Credentials</p><h2>Licensed, insured and certified.</h2></div>
+    <div class="grid g4">{credentials.map((c) => <div class="stack" style="gap:8px"><Icon name="check" size={28} /><h3>{c.t}</h3><p class="muted small">{c.d}</p></div>)}</div>
+    <p class="small muted" style="margin-top:24px">{company.license} · {company.insurance}</p>
+    <h3 style="margin:36px 0 14px">Brands we install</h3>
+    <div class="brands">{brands.map((b) => <span>{b}</span>)}</div>
+  </div></section>
+  <section class="band"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Team</p><h2>The people you will deal with</h2></div>
+    <div class="grid g4">{team.map((t) => <div class="card case"><div class="ph">Photo</div><div class="body"><h3>{t.n}</h3><p class="muted small">{t.r}</p><span class="draft">Name to add</span></div></div>)}</div>
+  </div></section>
+  <CtaBand />
+</Layout>

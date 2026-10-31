@@ -1,0 +1,50 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import { company } from '../../data/company';
+import { u } from '../../lib/url';
+
+const features = [
+  { i: 'maintenance', t: 'Service requests', d: 'Open a request with photos, follow every stage and read the tech notes.' },
+  { i: 'qr', t: 'QR on every device', d: 'Scan the sticker on a camera, reader or panel to report it. We know which device and where.' },
+  { i: 'automation', t: 'Systems by building', d: 'Every system with status, device counts and warranty dates.' },
+  { i: 'card', t: 'Plans, orders and billing', d: 'Change your plan, order fobs and services, pay by card or ACH, set up autopay.' },
+  { i: 'doc', t: 'Documents', d: 'As-builts, reports, warranties and certificates of insurance on demand.' },
+  { i: 'users', t: 'Your team', d: 'Invite managers, supers, bookkeepers and board members with the right access.' },
+];
+---
+<Layout title="Client Portal" description="Sign in to the EZTek client portal: service requests, systems, care plans, orders, invoices and documents for every building.">
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap split" style="align-items:start">
+    <div class="card stack" style="padding:clamp(20px,3vw,32px);max-width:480px" id="login">
+      <p class="eyebrow">Client portal</p>
+      <h1 style="font-size:clamp(1.7rem,3vw,2.2rem)">Sign in</h1>
+      <p class="muted small">We email you a one-time sign-in link. No password to remember.</p>
+      <form class="stack" novalidate data-form>
+        <div class="field"><label for="p-email">Work email</label><input id="p-email" type="email" autocomplete="email" name="email"></div>
+        <p class="err" role="alert" data-err></p>
+        <button class="btn" type="submit">Email me a sign-in link</button>
+      </form>
+      <div class="note" data-sent hidden tabindex="-1"><span class="draft">Preview</span><span>Sign-in opens with the live portal. Until then, explore the demo account with sample buildings and requests.</span></div>
+      <a class="btn ghost" href={u('/prototype/') + '#portal'}>Open the demo portal</a>
+      <p class="small muted">New client? Your account is set up after the first project or care plan. <a href={u('/contact/')}>Contact us</a> · <a href={`tel:${company.phone}`}>{company.phoneDisplay}</a></p>
+    </div>
+    <div>
+      <h2 style="font-size:1.6rem;margin-bottom:20px">Everything about your buildings, in one place</h2>
+      <div class="grid g2">{features.map((f) => <div class="stack" style="gap:8px"><Icon name={f.i} size={28} /><h3>{f.t}</h3><p class="muted small">{f.d}</p></div>)}</div>
+    </div>
+  </div></section>
+</Layout>
+
+<script>
+  const box = document.getElementById('login')!;
+  const form = box.querySelector<HTMLFormElement>('[data-form]')!;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
+    const err = box.querySelector<HTMLElement>('[data-err]')!;
+    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter the email you use with EZTek.'; return; }
+    err.textContent = '';
+    const sent = box.querySelector<HTMLElement>('[data-sent]')!;
+    sent.hidden = false; sent.focus();
+  });
+</script>

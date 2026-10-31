@@ -1,0 +1,18 @@
+---
+import { PLANS, PLAN_ROWS, type PlanId } from '../data/plans';
+import { u, money } from '../lib/url';
+interface Props { full?: boolean }
+const { full = false } = Astro.props;
+const ids: PlanId[] = ['essential', 'priority', 'managed'];
+const col = { essential: 1, priority: 2, managed: 3 } as const;
+---
+<div class="grid g3">
+  {ids.map((k) => { const p = PLANS[k]; return (
+    <div class={'card tier' + (k === 'priority' ? ' feature' : '')} style="padding:24px">
+      <span class="code"><span>{p.name.toUpperCase()}</span><span>{k === 'priority' ? 'Most buildings' : 'per building'}</span></span>
+      <div class="price">{p.from && <small>from </small>}{money(p.price)}<small> /mo</small></div>
+      <p class="muted small">{p.blurb}</p>
+      {full && <ul>{PLAN_ROWS.filter((r) => r[col[k]] !== '—').slice(0, 6).map((r) => <li>{r[0]}{r[col[k]] === '✓' ? '' : ': ' + r[col[k]]}</li>)}</ul>}
+      <a class={'btn' + (k === 'priority' ? '' : ' ghost')} href={u(`/quote/?plan=${k}`)}>Choose {p.name}</a>
+    </div>); })}
+</div>

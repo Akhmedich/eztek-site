@@ -1,0 +1,111 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Riser from '../components/Riser.astro';
+import Trust from '../components/Trust.astro';
+import Icon from '../components/Icon.astro';
+import PlanCards from '../components/PlanCards.astro';
+import Cases from '../components/Cases.astro';
+import Quotes from '../components/Quotes.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { company, yearsInBusiness, brands } from '../data/company';
+import { SERVICES, serviceBySlug } from '../data/services';
+import { BUILDINGS } from '../data/buildings';
+import { PLANS } from '../data/plans';
+import { AREAS } from '../data/areas';
+import { u } from '../lib/url';
+---
+<Layout title="EZTek Solutions | Security, Intercom, AV and Network Systems in NYC" description={`Brooklyn low-voltage integrator since ${company.founded}: cameras, access control, video intercoms, AV, structured cabling and automation for apartment buildings, offices, homes and schools across NYC.`}>
+  <section class="hero"><div class="wrap hero-in">
+    <div>
+      <p class="eyebrow">Low-voltage systems integrator · New York metro · Est. {company.founded}</p>
+      <h1>Every system in your building, from the cellar rack to the roof.</h1>
+      <p class="lede">EZTek designs, installs, programs and services security, intercom, audio-video, network and automation systems for apartment buildings, offices, homes and schools. One team, one contract, one number to call.</p>
+      <div class="cta-row"><a class="btn lg" href={u('/quote/')}>Book a site survey</a><a class="btn lg dark-ghost" href={u('/service/')}>Something is broken</a></div>
+      <dl class="facts"><div><dt>In business</dt><dd>{yearsInBusiness}+ years</dd></div><div><dt>Systems</dt><dd>9 services, one contract</dd></div><div><dt>Coverage</dt><dd>All five boroughs</dd></div></dl>
+    </div>
+    <Riser />
+  </div></section>
+
+  <Trust />
+
+  <section class="band"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Start with your building</p><h2>Different buildings need different systems.</h2><p class="lede">Pick the one closest to yours. We show what owners in that kind of building usually ask for, and start your quote with it.</p></div>
+    <div class="grid g3">
+      {BUILDINGS.map((b) => (
+        <a class="btype" href={u(`/buildings/${b.slug}/`)}>
+          <span class="code"><span>OCCUPANCY {b.code}</span><span>{PLANS[b.plan].name} plan</span></span>
+          <h3>{b.name}</h3><p>{b.who}</p>
+          <span class="sysrow">{b.services.slice(0, 4).map((s) => <i><Icon name={serviceBySlug[s].icon} />{serviceBySlug[s].short}</i>)}</span>
+          <span class="arrow">See what we install →</span>
+        </a>))}
+    </div>
+  </div></section>
+
+  <section class="band alt"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">What we do</p><h2>Nine services, designed to work together.</h2></div>
+    <div class="sys-grid">
+      {SERVICES.map((s) => <a class="sys-tile" href={u(`/services/${s.slug}/`)}><Icon name={s.icon} /><h3>{s.name}</h3><p>{s.desc}</p></a>)}
+    </div>
+  </div></section>
+
+  <section class="band"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">How a project runs</p><h2>From the first walk-through to years of service.</h2></div>
+    <ol class="process">
+      <li><h4>Site survey</h4><p>We walk the building and check risers, conduit, closets and existing equipment.</p></li>
+      <li><h4>Design and proposal</h4><p>Device layout, riser diagram and a line-item price you can compare.</p></li>
+      <li><h4>Installation</h4><p>Cabling, mounting and terminations, labeled at both ends.</p></li>
+      <li><h4>Programming and testing</h4><p>Every device commissioned and tested with you on site.</p></li>
+      <li><h4>Handover</h4><p>As-built drawings, warranties and training, saved to your portal.</p></li>
+      <li><h4>Service</h4><p>Care plan, maintenance visits and requests tracked online.</p></li>
+    </ol>
+  </div></section>
+
+  <section class="band alt"><div class="wrap split">
+    <div>
+      <p class="eyebrow">Client portal</p>
+      <h2 style="margin-top:12px">Your buildings, systems and invoices in one place.</h2>
+      <p class="lede" style="margin-top:14px">Each client account can have several users. Managers, supers and board members see what they need, and nothing else.</p>
+      <ul class="checks">
+        <li>Open a service request with photos and follow it until it is closed</li>
+        <li>Scan the QR sticker on any device to report a problem with it</li>
+        <li>See every system per building, with status and warranty dates</li>
+        <li>Change your care plan and add-ons yourself</li>
+        <li>Order fobs, cameras and programming changes at listed prices</li>
+        <li>Pay invoices, set up autopay, download a COI</li>
+      </ul>
+      <div class="cta-row"><a class="btn" href={u('/portal/')}>See the client portal</a></div>
+    </div>
+    <div class="mock" aria-hidden="true"><div class="mock-bar"><i></i><i></i><i></i><span style="margin-left:8px">portal · Harbor View Property Group</span></div><div class="mock-body">
+      <div class="grid g3" style="gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))"><div class="card kpi"><span class="k">Open requests</span><span class="v">3</span></div><div class="card kpi alert"><span class="k">Attention</span><span class="v">2</span></div><div class="card kpi"><span class="k">Next visit</span><span class="v" style="font-size:1.15rem">Nov 12</span></div></div>
+      <div class="mock-row"><span><b>Lobby camera 4 offline</b> · Shore Road</span><span class="pill info">Tech assigned</span></div>
+      <div class="mock-row"><span><b>Program 12 fobs</b> · Shore Road</span><span class="pill mute">Scheduled</span></div>
+      <div class="mock-row"><span><b>INV-10452</b> · Care plans, November</span><span class="pill warn">Due Nov 15</span></div>
+    </div></div>
+  </div></section>
+
+  <section class="band"><div class="wrap">
+    <div class="row sp" style="align-items:flex-end;margin-bottom:28px">
+      <div class="sec-head" style="margin:0"><p class="eyebrow">Care plans</p><h2>Service you can budget for.</h2><p class="muted">Per building, per month. Faster dispatch, scheduled maintenance and lower labor rates.</p></div>
+      <a class="btn ghost" href={u('/care-plans/')}>Compare plans</a>
+    </div>
+    <PlanCards />
+  </div></section>
+
+  <section class="band alt"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Work and references</p><h2>Recent projects</h2></div>
+    <Cases />
+    <div style="margin-top:16px"><Quotes /></div>
+    <h3 style="margin:40px 0 14px">Brands we install</h3>
+    <div class="brands">{brands.map((b) => <span>{b}</span>)}</div>
+  </div></section>
+
+  <section class="band tight"><div class="wrap"><div class="split" style="align-items:start">
+    <div><p class="eyebrow">Where we work</p><h2 style="margin-top:12px">New York City and the metro area.</h2></div>
+    <div>
+      <p class="muted">Based in {company.address.hood}, Brooklyn. We serve residential, commercial, multifamily, educational and institutional properties across the five boroughs and the surrounding metro area.</p>
+      <div class="boroughs">{AREAS.map((a) => <a href={u(`/areas/${a.slug}/`)}>{a.name}</a>)}<a href={u('/areas/')}>NYC metro →</a></div>
+    </div>
+  </div></div></section>
+
+  <CtaBand />
+</Layout>
