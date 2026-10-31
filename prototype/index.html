@@ -1,0 +1,1207 @@
+<title>EZTek Solutions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: "riser section" - a building cross-section is the hero; cool whiteprint paper, fiber-optic aqua as the signal color, monospace cable-tag labels */
+:root{
+  --paper:#EDF1F0; --surface:#FFFFFF; --sunk:#E2E9E8; --ink:#0E1D24; --ink2:#46585F; --ink3:#6F8188;
+  --line:#C9D4D4; --line2:#DCE4E3;
+  --fiber:#007C8A; --fiber-ink:#006773; --fiber-wash:#D5ECEE; --on-fiber:#FFFFFF;
+  --hero:#0F2A33; --hero-ink:#E6F1F1; --hero-dim:#8FA9AE; --hero-line:#2E4D57; --hero-dev:#58767D; --hero-lit:#45D8E3;
+  --ok:#21805A; --ok-wash:#DAEFE4; --warn:#9A6A00; --warn-wash:#F5EACD; --bad:#BC3F25; --bad-wash:#F7DED7;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0B1418; --surface:#111D22; --sunk:#0D181C; --ink:#E2EBEB; --ink2:#9DAFB4; --ink3:#71868C;
+  --line:#26383E; --line2:#1B2A30;
+  --fiber:#2EC1CE; --fiber-ink:#63D4DD; --fiber-wash:#103338; --on-fiber:#04191C;
+  --hero:#08191F; --hero-ink:#E2EEEE; --hero-dim:#86A0A5; --hero-line:#22424C; --hero-dev:#4C6A71; --hero-lit:#45D8E3;
+  --ok:#4CC08A; --ok-wash:#112E20; --warn:#E0A93A; --warn-wash:#32270D; --bad:#F07A5E; --bad-wash:#3A1912;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0B1418; --surface:#111D22; --sunk:#0D181C; --ink:#E2EBEB; --ink2:#9DAFB4; --ink3:#71868C;
+  --line:#26383E; --line2:#1B2A30;
+  --fiber:#2EC1CE; --fiber-ink:#63D4DD; --fiber-wash:#103338; --on-fiber:#04191C;
+  --hero:#08191F; --hero-ink:#E2EEEE; --hero-dim:#86A0A5; --hero-line:#22424C; --hero-dev:#4C6A71; --hero-lit:#45D8E3;
+  --ok:#4CC08A; --ok-wash:#112E20; --warn:#E0A93A; --warn-wash:#32270D; --bad:#F07A5E; --bad-wash:#3A1912;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+a{color:var(--fiber-ink)}
+h1,h2,h3,h4{font-family:var(--f-display);font-stretch:116%;letter-spacing:-.012em;line-height:1.06;margin:0;text-wrap:balance}
+h1{font-size:clamp(2.1rem,4.6vw,3.7rem);font-weight:800}
+h2{font-size:clamp(1.55rem,2.8vw,2.3rem);font-weight:760}
+h3{font-size:1.14rem;font-weight:700;font-stretch:108%;letter-spacing:0}
+h4{font-size:1rem;font-weight:700;font-stretch:104%;letter-spacing:0}
+p{margin:0}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font:500 12px/1.4 var(--f-mono);text-transform:uppercase;letter-spacing:.09em;color:var(--fiber-ink)}
+.lede{font-size:1.15rem;color:var(--ink2);max-width:58ch}
+.muted{color:var(--ink2)}
+.small{font-size:14px}
+.wrap{max-width:1200px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+:focus-visible{outline:2px solid var(--fiber);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:.72rem 1.1rem;border-radius:3px;border:1px solid transparent;background:var(--fiber);color:var(--on-fiber);font:600 15px/1.2 var(--f-body);text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink3);filter:none}
+.btn.dark-ghost{background:transparent;color:var(--hero-ink);border-color:var(--hero-line)}
+.btn.sm{padding:.48rem .8rem;font-size:14px}
+.btn.lg{padding:.9rem 1.35rem;font-size:16px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;padding:0;color:var(--fiber-ink);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+/* utility strip + header */
+.util{background:var(--hero);color:var(--hero-dim);font:500 12px/1.3 var(--f-mono)}
+.util-in{display:flex;justify-content:space-between;gap:12px;padding-block:7px;flex-wrap:wrap}
+.util a{color:var(--hero-ink);text-decoration:none}
+.proto{color:var(--hero-lit);letter-spacing:.05em;text-transform:uppercase}
+.util-r{display:flex;gap:16px;flex-wrap:wrap}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:25;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:20px;min-height:64px}
+.logo{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;flex-shrink:0}
+.logo svg{width:30px;height:30px}
+.logo b{font:850 22px/1 var(--f-display);font-stretch:125%;letter-spacing:.01em}
+.logo small{display:block;font:500 9.5px/1 var(--f-mono);letter-spacing:.22em;color:var(--ink3);margin-top:3px}
+.nav{display:flex;gap:4px;margin-left:12px}
+.nav a{color:var(--ink2);text-decoration:none;font-weight:600;font-size:15px;padding:8px 10px;border-radius:3px}
+.nav a:hover,.nav a[aria-current="page"]{color:var(--ink);background:var(--sunk)}
+.top-act{margin-left:auto;display:flex;gap:8px;align-items:center}
+.menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:.45rem .7rem;font:600 14px var(--f-body);cursor:pointer}
+@media (max-width:980px){
+  .nav{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--line);padding:8px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px));margin:0}
+  .nav.open{display:flex}
+  .nav a{padding:12px 10px}
+  .menu-btn{display:inline-flex}
+}
+@media (max-width:560px){ .top-act .hide-xs{display:none} .util-r .addr{display:none} }
+
+/* bands */
+.band{padding-block:clamp(56px,8vw,100px)}
+.band.alt{background:var(--surface);border-block:1px solid var(--line2)}
+.band.tight{padding-block:clamp(36px,5vw,56px)}
+.sec-head{display:grid;gap:12px;margin-bottom:36px;max-width:760px}
+.sec-head .lede{font-size:1.05rem}
+
+/* hero */
+.hero{background:var(--hero);color:var(--hero-ink);overflow:hidden}
+.hero-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:clamp(28px,5vw,64px);align-items:center;padding-block:clamp(40px,6vw,76px)}
+.hero .eyebrow{color:var(--hero-lit)}
+.hero h1{margin-top:16px}
+.hero .lede{color:var(--hero-dim);margin-top:18px}
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
+.hero .btn:not(.dark-ghost){background:var(--hero-lit);color:#04191C}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--hero-line);border:1px solid var(--hero-line);margin:32px 0 0;border-radius:3px;overflow:hidden}
+.facts div{background:var(--hero);padding:12px 14px}
+.facts dt{font:500 11px/1.2 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--hero-dim)}
+.facts dd{margin:6px 0 0;font:700 15px/1.25 var(--f-display);font-stretch:108%}
+@media (max-width:960px){.hero-in{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){.facts{grid-template-columns:minmax(0,1fr)}}
+
+.riser{margin:0;display:grid;gap:14px}
+.riser svg{width:100%;height:auto;display:block}
+.riser .st{stroke:var(--hero-line);fill:none;stroke-width:1.5}
+.riser .lbl{fill:var(--hero-dim);font:500 11px var(--f-mono);letter-spacing:.06em}
+.riser .lbl.lv{fill:var(--hero-ink);font-weight:600}
+.dev{color:var(--hero-dev);transition:color .3s ease}
+.dev.on{color:var(--hero-lit)}
+.dots{opacity:0;transition:opacity .3s}
+.dots.on{opacity:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px/1 var(--f-mono);padding:8px 10px;border-radius:2px;border:1px solid var(--hero-line);background:transparent;color:var(--hero-dim);cursor:pointer;letter-spacing:.02em}
+.chip:hover{color:var(--hero-ink);border-color:var(--hero-dim)}
+.chip[aria-pressed="true"]{background:var(--hero-lit);border-color:var(--hero-lit);color:#04191C}
+.riser figcaption{font-size:14px;color:var(--hero-dim);min-height:2.9em}
+.riser figcaption b{color:var(--hero-ink)}
+@media (prefers-reduced-motion:reduce){.dev,.dots{transition:none}}
+@media (max-width:560px){.riser .lbl:not(.lv){display:none}.riser .lbl.lv{font-size:17px}}
+
+/* cards / grids */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px}
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:980px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.g3,.g2,.g4{grid-template-columns:minmax(0,1fr)}}
+
+.btype{display:grid;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px;cursor:pointer;color:var(--ink);font:inherit;transition:border-color .2s}
+.btype:hover{border-color:var(--fiber)}
+.code{font:600 11px/1 var(--f-mono);letter-spacing:.06em;color:var(--fiber-ink);display:flex;justify-content:space-between;gap:8px}
+.code span:last-child{color:var(--ink3);font-weight:500}
+.btype p{color:var(--ink2);font-size:14.5px}
+.sysrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.sysrow i{display:inline-flex;align-items:center;gap:5px;font:500 11.5px/1 var(--f-mono);font-style:normal;color:var(--ink2);background:var(--sunk);padding:5px 7px;border-radius:2px}
+.sysrow svg{width:14px;height:14px}
+.arrow{font:600 14px var(--f-body);color:var(--fiber-ink)}
+
+.sys-tile{display:grid;gap:10px;padding:22px 20px;border-top:1px solid var(--line)}
+.sys-tile .ic{width:34px;height:34px;color:var(--fiber-ink)}
+.sys-tile p{color:var(--ink2);font-size:14.5px}
+.sys-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:24px}
+@media (max-width:980px){.sys-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.sys-grid{grid-template-columns:minmax(0,1fr)}}
+
+.process{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;counter-reset:s;border-top:2px solid var(--ink)}
+.process li{padding:18px 16px 0 0;display:grid;gap:8px;align-content:start;position:relative}
+.process li::before{counter-increment:s;content:counter(s,decimal-leading-zero);font:600 12px var(--f-mono);color:var(--fiber-ink)}
+.process li::after{content:"";position:absolute;top:-6px;left:0;width:10px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--ink)}
+.process p{font-size:14px;color:var(--ink2)}
+@media (max-width:980px){.process{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:26px}}
+@media (max-width:560px){.process{grid-template-columns:minmax(0,1fr);border-top:0;border-left:2px solid var(--ink);padding-left:18px}.process li{padding:0 0 4px}.process li::after{left:-25px;top:3px}}
+
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(28px,5vw,64px);align-items:center}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
+.checks{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:10px}
+.checks li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;color:var(--ink2)}
+.checks li::before{content:"";width:10px;height:10px;margin-top:7px;border:2px solid var(--fiber);border-radius:50%}
+
+/* mini portal mock */
+.mock{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 18px 40px -24px rgba(8,25,31,.45)}
+.mock-bar{display:flex;gap:6px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line2);background:var(--sunk);font:500 11px var(--f-mono);color:var(--ink3)}
+.mock-bar i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.mock-body{padding:16px;display:grid;gap:12px}
+.mock-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line2);border-radius:3px;font-size:14px}
+.mock-row span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* tiers */
+.tier{display:grid;gap:14px;align-content:start}
+.tier.feature{border-color:var(--fiber);box-shadow:0 0 0 1px var(--fiber)}
+.price{font:800 2.2rem/1 var(--f-display);font-stretch:112%}
+.price small{font:500 13px var(--f-mono);color:var(--ink3);letter-spacing:0}
+.tier ul{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:14.5px;color:var(--ink2)}
+.tier li{padding-left:16px;position:relative}
+.tier li::before{content:"";position:absolute;left:0;top:.6em;width:7px;height:2px;background:var(--fiber)}
+.draft{display:inline-flex;align-items:center;font:600 10.5px/1 var(--f-mono);color:var(--warn);border:1px dashed var(--warn);padding:4px 6px;border-radius:2px;text-transform:uppercase;letter-spacing:.07em;vertical-align:middle;white-space:nowrap}
+.note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-wash);color:var(--ink);border-radius:3px;padding:12px 14px;font-size:14px}
+
+/* slots (content to collect) */
+.slot{border:1.5px dashed var(--line);border-radius:4px;padding:20px;display:grid;gap:8px;color:var(--ink3);background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
+.slot b{color:var(--ink2)}
+.slot .ph{aspect-ratio:16/9;max-width:100%;border:1px solid var(--line);border-radius:3px;display:grid;place-items:center;font:500 12px var(--f-mono);background:var(--surface)}
+
+/* areas */
+.boroughs{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.boroughs span{font:600 13px var(--f-mono);border:1px solid var(--line);padding:8px 12px;border-radius:2px;background:var(--surface)}
+
+.cta-band{background:var(--hero);color:var(--hero-ink)}
+.cta-in{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;padding-block:clamp(40px,6vw,64px)}
+.cta-band p{color:var(--hero-dim);margin-top:10px}
+.cta-band .btn:not(.dark-ghost){background:var(--hero-lit);color:#04191C}
+
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--surface);font-size:14px;color:var(--ink2)}
+.foot{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:28px;padding-block:44px 28px}
+.foot h4{font:600 11px/1 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.foot ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.foot a{color:var(--ink2);text-decoration:none}
+.foot a:hover{color:var(--ink)}
+.foot-b{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line2);padding-block:16px;font:500 12px var(--f-mono);color:var(--ink3)}
+@media (max-width:800px){.foot{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.foot{grid-template-columns:minmax(0,1fr)}}
+
+/* page heads */
+.page-head{display:grid;gap:12px;margin-bottom:32px;max-width:780px}
+.h-page{font-size:clamp(2rem,4vw,3rem)}
+
+/* tabs */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:24px;scrollbar-width:thin}
+.tab{flex-shrink:0;background:var(--surface);border:1px solid var(--line);color:var(--ink2);font:600 14px var(--f-body);padding:10px 14px;border-radius:3px;cursor:pointer;display:grid;gap:3px;text-align:left}
+.tab small{font:500 10.5px var(--f-mono);color:var(--ink3);letter-spacing:.05em}
+.tab[aria-selected="true"]{border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -3px 0 var(--fiber)}
+.bpanel{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px}
+@media (max-width:860px){.bpanel{grid-template-columns:minmax(0,1fr)}}
+.big-code{font:800 clamp(3rem,7vw,5rem)/1 var(--f-display);font-stretch:125%;color:var(--fiber-ink)}
+
+/* services page */
+.svc-index{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
+.svc-index a{font:500 12.5px var(--f-mono);text-decoration:none;color:var(--ink2);border:1px solid var(--line);padding:7px 10px;border-radius:2px;background:var(--surface)}
+.svc-block{display:grid;grid-template-columns:56px minmax(0,1fr) minmax(0,1fr);gap:20px;padding-block:28px;border-top:1px solid var(--line);scroll-margin-top:90px}
+.svc-block .ic{width:40px;height:40px;color:var(--fiber-ink)}
+.svc-block ul{margin:0;padding-left:18px;color:var(--ink2);display:grid;gap:6px}
+@media (max-width:760px){.svc-block{grid-template-columns:minmax(0,1fr)}}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{font:600 11px/1.2 var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--sunk);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--line2);vertical-align:top;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+.cmp td:not(:first-child),.cmp th:not(:first-child){text-align:center}
+.cmp td:first-child{color:var(--ink2)}
+.dash{color:var(--ink3)}
+
+details.faq{border-top:1px solid var(--line);padding:16px 0}
+details.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+details.faq summary::after{content:"+";font:600 18px var(--f-mono);color:var(--fiber-ink)}
+details.faq[open] summary::after{content:"−"}
+details.faq p{margin-top:10px;color:var(--ink2);max-width:70ch}
+
+/* forms */
+.field{display:grid;gap:6px;min-width:0}
+.field label,.lbl-t{font-weight:600;font-size:14px}
+.field .hint{font-size:13px;color:var(--ink3)}
+input[type=text],input[type=email],input[type=tel],input[type=number],input[type=password],select,textarea{width:100%;padding:.66rem .75rem;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px}
+textarea{min-height:96px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--fiber);outline-offset:0;border-color:var(--fiber)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form-grid .full{grid-column:1/-1}
+@media (max-width:600px){.form-grid{grid-template-columns:minmax(0,1fr)}}
+.opts{display:grid;gap:10px}
+.opts.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opts.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:700px){.opts.c3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.opts.c2,.opts.c3{grid-template-columns:minmax(0,1fr)}}
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;border:1px solid var(--line);background:var(--surface);padding:13px 14px;border-radius:4px;cursor:pointer}
+.opt input{margin:3px 0 0;accent-color:var(--fiber)}
+.opt b{font-size:15px}
+.opt span{grid-column:2;font-size:13px;color:var(--ink2)}
+.opt .code{grid-column:2}
+.opt:has(input:checked){border-color:var(--fiber);background:var(--fiber-wash)}
+.opt:has(input:focus-visible){outline:2px solid var(--fiber);outline-offset:2px}
+.err{color:var(--bad);font-weight:600;font-size:14px;margin-top:14px}
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slotbtn{font:500 13px var(--f-mono);padding:9px 11px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink);cursor:pointer}
+.slotbtn[aria-pressed="true"]{background:var(--fiber);color:var(--on-fiber);border-color:var(--fiber)}
+
+/* wizard */
+.wiz{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+@media (max-width:900px){.wiz{grid-template-columns:minmax(0,1fr)}}
+.steps{list-style:none;padding:0;margin:0 0 24px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.steps li{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--ink3)}
+.steps li::before{content:"";height:4px;border-radius:2px;background:var(--line)}
+.steps li.done::before{background:var(--fiber)}
+.steps li.cur{color:var(--ink)}
+.steps li.cur::before{background:var(--ink)}
+.steps .mono{font-weight:500;margin-right:6px}
+@media (max-width:440px){.steps li:not(.cur) .st-l{display:none}}
+.li-btn>span{display:block;min-width:0}
+.li-btn .t,.li-btn .m{display:block}
+.li-btn .m{display:flex}
+.wiz-step{display:grid;gap:20px}
+.wiz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line2)}
+.wiz-sum{position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);display:grid;gap:14px}
+.sum-row{display:grid;gap:3px;font-size:14px}
+.sum-row span:first-child{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
+.sum-empty{color:var(--ink3)}
+.done-card{display:grid;gap:18px;max-width:760px}
+.ticket-id{font:700 1.6rem var(--f-mono);color:var(--fiber-ink)}
+.next{margin:0;padding-left:20px;display:grid;gap:8px;color:var(--ink2)}
+
+/* pills, progress */
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 12px/1 var(--f-body);padding:5px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--ok-wash);color:var(--ok)}
+.pill.warn{background:var(--warn-wash);color:var(--warn)}
+.pill.bad{background:var(--bad-wash);color:var(--bad)}
+.pill.info{background:var(--fiber-wash);color:var(--fiber-ink)}
+.pill.mute{background:var(--sunk);color:var(--ink2)}
+.prog{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;width:120px}
+.prog i{height:5px;border-radius:2px;background:var(--line)}
+.prog i.f{background:var(--fiber)}
+
+/* portal */
+.portal{display:grid;grid-template-columns:232px minmax(0,1fr);gap:28px;padding-block:28px 64px;align-items:start}
+.p-side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 80px);display:grid;gap:18px}
+.p-acct{display:grid;gap:4px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.p-acct .mono{font-size:10.5px;letter-spacing:.1em;color:var(--ink3)}
+.p-acct span:last-child{font-size:13px;color:var(--ink2)}
+.p-nav{display:grid;gap:2px}
+.p-nav a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-radius:3px;color:var(--ink2);text-decoration:none;font-weight:600;font-size:14.5px}
+.p-nav a:hover{background:var(--sunk);color:var(--ink)}
+.p-nav a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:inset 3px 0 0 var(--fiber),0 0 0 1px var(--line)}
+.badge{font:600 11px/1 var(--f-mono);background:var(--ink);color:var(--surface);padding:3px 6px;border-radius:99px}
+.badge.alert{background:var(--bad);color:var(--paper)}
+@media (max-width:900px){
+  .portal{grid-template-columns:minmax(0,1fr);gap:16px;padding-top:16px}
+  .p-side{position:static;gap:12px}
+  .p-acct{padding-bottom:10px}
+  .p-nav{display:flex;overflow-x:auto;gap:4px;padding-bottom:4px}
+  .p-nav a{flex-shrink:0;border:1px solid var(--line);background:var(--surface)}
+  .p-nav a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--fiber);border-color:var(--ink)}
+  .p-side>.btn{justify-self:start}
+}
+.p-main{display:grid;gap:22px;min-width:0}
+.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.p-head h1{font-size:clamp(1.6rem,3vw,2.1rem)}
+.p-head p{color:var(--ink2);margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{display:grid;gap:6px;padding:16px}
+.kpi .k{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
+.kpi .v{font:800 1.8rem/1 var(--f-display);font-stretch:110%;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--ink2)}
+.kpi.alert{border-color:var(--bad)}
+.kpi.alert .v{color:var(--bad)}
+.list{display:grid;border:1px solid var(--line);border-radius:4px;background:var(--surface);overflow:hidden}
+.li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line2)}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:700}
+.li .m{font-size:13px;color:var(--ink2);display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center}
+.li .m .mono{font-size:12px}
+.li.sev-bad{box-shadow:inset 4px 0 0 var(--bad)}
+.li.sev-warn{box-shadow:inset 4px 0 0 var(--warn)}
+.li-btn{all:unset;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:14px 16px;cursor:pointer;width:100%;box-sizing:border-box}
+.li-btn:focus-visible{outline:2px solid var(--fiber);outline-offset:-2px}
+.req{border-bottom:1px solid var(--line2)}
+.req:last-child{border-bottom:0}
+.req-detail{padding:4px 16px 18px;display:grid;gap:14px;background:var(--sunk)}
+.timeline{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.timeline li{font-size:12.5px;color:var(--ink3);display:grid;gap:6px}
+.timeline li::before{content:"";height:4px;border-radius:2px;background:var(--line)}
+.timeline li.f{color:var(--ink)}
+.timeline li.f::before{background:var(--fiber)}
+@media (max-width:520px){.timeline{grid-template-columns:minmax(0,1fr)}.timeline li{grid-template-columns:12px minmax(0,1fr);align-items:center}.timeline li::before{height:12px;width:4px}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:var(--surface);border:0;border-right:1px solid var(--line);padding:9px 12px;font:600 13.5px var(--f-body);color:var(--ink2);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.confirm{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--fiber);background:var(--fiber-wash);border-radius:3px;font-size:14px}
+.addon{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center;padding:12px 0;border-top:1px solid var(--line2)}
+.addon .d{font-size:13px;color:var(--ink2)}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.qty button{background:var(--surface);border:0;width:32px;height:32px;cursor:pointer;color:var(--ink);font:600 16px var(--f-body)}
+.qty input{width:52px;border:0;border-inline:1px solid var(--line);text-align:center;padding:6px 2px;border-radius:0}
+.toggle{position:relative;width:44px;height:26px;border-radius:99px;background:var(--line);border:0;cursor:pointer;flex-shrink:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);transition:left .2s}
+.toggle[aria-pressed="true"]{background:var(--fiber)}
+.toggle[aria-pressed="true"]::after{left:21px}
+.toggle[disabled]{opacity:.5;cursor:not-allowed}
+.order-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:1000px){.order-layout{grid-template-columns:minmax(0,1fr)}}
+.cat{display:grid;gap:10px;align-content:space-between}
+.cat-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.cat .pr{font:700 1.1rem var(--f-display);font-variant-numeric:tabular-nums}
+.cart{position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);display:grid;gap:12px}
+.cart-line{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.total{display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line);padding-top:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sp{justify-content:space-between}
+.stack{display:grid;gap:14px}
+.metric{display:grid;grid-template-columns:minmax(0,1fr) 110px 54px;gap:12px;align-items:center;font-size:14px;padding:8px 0;border-top:1px solid var(--line2)}
+.bar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--fiber)}
+.login{max-width:440px;margin:clamp(32px,6vw,72px) auto;display:grid;gap:16px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:12px 16px;border-radius:4px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px);box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+</style>
+
+<div class="util"><div class="wrap util-in">
+  <span class="proto">Prototype · demo data · draft prices</span>
+  <span class="util-r"><span class="addr">1707 70th St, Brooklyn, NY 11204</span><a href="tel:+18886939835" class="num">(888) 693-9835</a></span>
+</div></div>
+<header class="top"><div class="wrap top-in">
+  <a href="#home" class="logo" aria-label="EZTek Solutions home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4.5v23" stroke="currentColor" stroke-width="3" stroke-linecap="square"/><path d="M6 6.5h15M6 16h10M6 25.5h15" stroke="currentColor" stroke-width="3"/><circle cx="24" cy="6.5" r="3.2" fill="var(--fiber)"/><circle cx="19" cy="16" r="3.2" fill="var(--fiber)"/><circle cx="24" cy="25.5" r="3.2" fill="var(--fiber)"/></svg>
+    <span><b>EZTEK</b><small>SOLUTIONS</small></span>
+  </a>
+  <nav class="nav" id="nav" aria-label="Main">
+    <a href="#buildings">Buildings</a>
+    <a href="#services">Services</a>
+    <a href="#plans">Care plans</a>
+    <a href="#service">Request service</a>
+    <a href="#portal">Client portal</a>
+  </nav>
+  <div class="top-act">
+    <a href="#portal" class="btn ghost sm hide-xs" id="loginBtn">Client login</a>
+    <a href="#quote" class="btn sm">Get a quote</a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+  </div>
+</div></header>
+
+<main id="main"></main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="stack">
+      <a href="#home" class="logo" aria-label="EZTek Solutions home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4.5v23" stroke="currentColor" stroke-width="3"/><path d="M6 6.5h15M6 16h10M6 25.5h15" stroke="currentColor" stroke-width="3"/><circle cx="24" cy="6.5" r="3.2" fill="var(--fiber)"/><circle cx="19" cy="16" r="3.2" fill="var(--fiber)"/><circle cx="24" cy="25.5" r="3.2" fill="var(--fiber)"/></svg>
+        <span><b>EZTEK</b><small>SOLUTIONS</small></span>
+      </a>
+      <p>Low-voltage systems integration for residential, commercial, multifamily, educational and institutional properties in the New York metropolitan area.</p>
+      <p class="mono small">License and insurance details: <span class="draft">to add</span></p>
+    </div>
+    <div><h4>Contact</h4><ul>
+      <li class="num">(888) 693-9835</li>
+      <li>1707 70th St<br>Brooklyn, NY 11204</li>
+      <li>eztekav.com</li>
+      <li>Hours: <span class="draft">to add</span></li>
+    </ul></div>
+    <div><h4>Company</h4><ul>
+      <li><a href="#buildings">Building types</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#plans">Care plans</a></li>
+      <li><a href="#quote">Get a quote</a></li>
+    </ul></div>
+    <div><h4>Clients</h4><ul>
+      <li><a href="#portal">Client portal</a></li>
+      <li><a href="#service">Request service</a></li>
+      <li><a href="#portal-billing">Pay an invoice</a></li>
+      <li><a href="#portal-docs">Request a COI</a></li>
+    </ul></div>
+  </div>
+  <div class="wrap foot-b"><span>© 2026 EZTek Solutions · Est. 2004</span><span>Prototype for review. Prices, plans and client data are examples.</span></div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+"use strict";
+var $ = function(s,r){return (r||document).querySelector(s)};
+var $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function money(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
+function money2(n){return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function fmtD(iso){var p=iso.split('-');var d=new Date(+p[0],+p[1]-1,+p[2]);return MON[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()}
+function rid(){return String(Math.floor(1000+Math.random()*9000))}
+
+/* ---------- icons ---------- */
+var ICONP={
+ security:'<path d="M3 8h12v7H3z"/><path d="M15 10l5-3v9l-5-3"/><path d="M7 15v4M4 19h6"/>',
+ intercom:'<rect x="6" y="2.5" width="12" height="19" rx="1.5"/><circle cx="12" cy="7.5" r="2"/><path d="M9 13h6M9 16h6"/>',
+ av:'<rect x="2.5" y="4" width="19" height="12" rx="1"/><path d="M8 20h8M12 16v4"/>',
+ network:'<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M12 7.2v4.3M12 11.5L6.4 16.3M12 11.5l5.6 4.8"/>',
+ automation:'<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M4 7h16M4 10.5h16M4 14h16"/><path d="M12 14v4"/>',
+ integration:'<circle cx="12" cy="12" r="3"/><circle cx="4" cy="5" r="1.8"/><circle cx="20" cy="5" r="1.8"/><circle cx="4" cy="19" r="1.8"/><circle cx="20" cy="19" r="1.8"/><path d="M5.4 6.3l4.4 3.6M18.6 6.3l-4.4 3.6M5.4 17.7l4.4-3.6M18.6 17.7l-4.4-3.6"/>',
+ maintenance:'<path d="M14.5 3.5a4.5 4.5 0 0 0-4.3 5.9L3.5 16.1a2 2 0 0 0 2.8 2.8l6.7-6.7a4.5 4.5 0 0 0 5.9-4.3l-2.6 2.6-2.8-.6-.6-2.8z"/>'
+};
+function icon(s,cls){return '<svg class="'+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONP[s]+'</svg>'}
+
+/* ---------- content ---------- */
+var SYS=[
+ {id:'security',name:'Security',short:'Security',desc:'Video surveillance, intrusion detection, alarm systems and electronic access control.',
+  items:['CCTV and IP video surveillance, recorders and cloud video','Intrusion detection and alarm systems','Electronic access control: card, fob, PIN and mobile credentials','Remote viewing and user management'],
+  cap:'Cameras at the entrance, halls and cellar, plus a card reader at the lobby door.'},
+ {id:'intercom',name:'Intercom & entry',short:'Intercom',desc:'Video intercoms, telephone entry systems and building access.',
+  items:['Video intercoms and smartphone entry','Telephone entry systems for lobbies and gates','Apartment stations and handsets','Delivery and visitor access'],
+  cap:'Entry panel at the lobby door and stations in each apartment and the residence.'},
+ {id:'av',name:'Audio & video',short:'Audio-video',desc:'Home theaters, commercial AV, distributed audio and video distribution.',
+  items:['Home theaters and media rooms','Conference rooms and commercial displays','Distributed audio by zone','Video distribution and TV mounting'],
+  cap:'Theater screen in the penthouse, a conference display and ceiling speakers on the office floor.'},
+ {id:'network',name:'Networks & telecom',short:'Network',desc:'Structured cabling, fiber optics, Wi-Fi, data infrastructure and telephone systems.',
+  items:['Structured cabling, labeled and tested','Fiber optic backbone and risers','Wi-Fi design and installation','Data racks, switches and phone systems'],
+  cap:'Fiber from the street to the cellar rack, up the riser to Wi-Fi on every floor.'},
+ {id:'automation',name:'Building automation',short:'Automation',desc:'Smart lighting, motorized shades, HVAC integration and central controls.',
+  items:['Lighting control and scenes','Motorized shades and drapery','HVAC and thermostat integration','Schedules and centralized controls'],
+  cap:'Motorized shades and lighting in the residence, a smart thermostat in the office.'},
+ {id:'integration',name:'System integration',short:'Integration',desc:'Programming separate systems into one control platform people can use.',
+  items:['Control processors and touch panels','One app for lights, shades, AV, cameras and climate','Custom programming and scenes','Integration of existing equipment'],
+  cap:'One controller in the cellar ties every system to a single touch panel upstairs.'},
+ {id:'maintenance',name:'Maintenance & support',short:'Service',desc:'Troubleshooting, repairs, upgrades, preventive maintenance and ongoing support.',
+  items:['Troubleshooting and repairs','Preventive maintenance visits with written reports','Firmware, security updates and upgrades','Remote support and programming changes'],
+  cap:'Every device has a status. Here, one lobby camera is offline and a request is already open.'}
+];
+var SYSM={};SYS.forEach(function(s){SYSM[s.id]=s});
+
+var TYPES=[
+ {id:'multifamily',name:'Rental apartments',code:'R-2',who:'Owners, managing agents and supers of walk-ups, elevator buildings and new developments.',
+  needs:['Lobby entry that works with phones, not only buzzers','Cameras covering entrances, mailrooms and laundry','Fob changes when tenants move in and out','One vendor to call when something stops working'],systems:['intercom','security','network','maintenance'],plan:'priority'},
+ {id:'condo',name:'Condos & co-ops',code:'R-2',who:'Boards, managing agents and resident managers.',
+  needs:['Video entry and package access for residents','Reports the board can read in five minutes','A current certificate of insurance on file','Upgrades planned around residents, with notice'],systems:['intercom','security','network','maintenance'],plan:'managed'},
+ {id:'residence',name:'Private residences',code:'R-3',who:'Homeowners, townhouse and penthouse owners, architects and designers.',
+  needs:['A theater and whole-home audio run from one remote','Shades and lighting scenes by room and time of day','Whole-home Wi-Fi on a wired backbone','One app for door, cameras and climate'],systems:['av','automation','network','integration'],plan:'managed'},
+ {id:'office',name:'Offices & commercial',code:'B',who:'Office managers, facility teams, landlords and general contractors.',
+  needs:['Cabling and Wi-Fi ready on move-in day','Badge access you can manage remotely','Conference rooms that connect on the first try','Moves, adds and changes without downtime'],systems:['network','security','av','integration'],plan:'priority'},
+ {id:'retail',name:'Retail & hospitality',code:'M / A-2',who:'Stores, restaurants, hotels and gyms.',
+  needs:['Cameras on registers, stockrooms and doors','Background music and screens by zone','Guest Wi-Fi kept apart from the business network','Alarm you can arm and check from your phone'],systems:['security','av','network','maintenance'],plan:'essential'},
+ {id:'institution',name:'Schools & institutions',code:'E',who:'Schools and colleges, plus houses of worship, nonprofits and clinics.',
+  needs:['Controlled entry and visitor check-in','Public address and classroom AV','Network and Wi-Fi across the whole campus','Documentation for audits and grant reports'],systems:['security','intercom','network','av'],plan:'managed'}
+];
+var TYPEM={};TYPES.forEach(function(t){TYPEM[t.id]=t});
+
+var PLANS={
+ essential:{name:'Essential',price:149,from:false,blurb:'A service partner on file, with portal access and a yearly checkup.'},
+ priority:{name:'Priority',price:349,from:false,blurb:'Faster dispatch and twice-a-year maintenance for buildings people live and work in.'},
+ managed:{name:'Managed',price:790,from:true,blurb:'We watch the systems, cover labor on repairs and report to the owner or board.'}
+};
+var PLAN_ROWS=[
+ ['Client portal and service history','✓','✓','✓'],
+ ['Remote troubleshooting','✓','✓','✓'],
+ ['Preventive maintenance visits','1 per year','2 per year','4 per year'],
+ ['Dispatch target','Scheduled','Next business day','Same day, incl. after-hours'],
+ ['Firmware and security updates','—','✓','✓'],
+ ['Remote programming changes','Billed per change','10 per month','Unlimited'],
+ ['Labor on covered repairs','10% off','20% off','Included'],
+ ['Device health monitoring','Add-on','Add-on','Included'],
+ ['Owner or board report','—','Yearly','Quarterly'],
+ ['Account manager','—','—','Dedicated']
+];
+var ADDONS=[
+ {id:'video',name:'Extended cloud video retention',unit:'camera',price:3,desc:'Keep 90 days of footage instead of 30.'},
+ {id:'monitor',name:'Device health monitoring',unit:'device',price:2,desc:'Alerts when a camera, reader or access point goes offline. Included in Managed.'},
+ {id:'after',name:'After-hours coverage',unit:'site',price:120,desc:'Evening, weekend and holiday dispatch. Included in Managed.'},
+ {id:'wifi',name:'Managed Wi-Fi',unit:'access point',price:4,desc:'Firmware, channel planning and monthly reports.'}
+];
+
+var CATALOG=[
+ {id:'fobs',sys:'security',name:'Key fobs, pack of 10',desc:'Programmed to your access system and dropped off at the building.',price:120},
+ {id:'cam',sys:'security',name:'Additional IP camera',desc:'Installed, aimed and added to your recorder. Up to 50 ft of cable.',price:650,from:true},
+ {id:'door',sys:'security',name:'Add a door to access control',desc:'Reader, lock hardware and wiring. Priced after a short survey.',quote:true},
+ {id:'prog',sys:'integration',name:'Remote programming change',desc:'Schedules, user codes, scenes or camera settings.',price:95},
+ {id:'tv',sys:'av',name:'TV wall mount, up to 75"',desc:'Mount, hide cables in the wall where possible, connect sources.',price:249},
+ {id:'wifi',sys:'network',name:'Wi-Fi coverage survey',desc:'Signal map of every floor with a written list of fixes.',price:450},
+ {id:'health',sys:'network',name:'Network health check',desc:'Switches, firewall, cabling faults and firmware review.',price:295},
+ {id:'pm',sys:'maintenance',name:'Extra maintenance visit',desc:'Full inspection and cleaning of one system, with a report.',price:395},
+ {id:'cal',sys:'av',name:'Home theater calibration',desc:'Audio and picture calibration for one room.',quote:true}
+];
+var CATM={};CATALOG.forEach(function(c){CATM[c.id]=c});
+
+/* ---------- demo portal data ---------- */
+var D={
+ sites:[
+  {id:'shore',name:'Shore Road Residences',hood:'Bay Ridge, Brooklyn',type:'multifamily',size:'48 apartments · 6 floors',plan:'priority',ad:{video:16,monitor:0,after:false,wifi:0},nextPM:'2026-11-12',
+   systems:[
+    {sys:'intercom',name:'Video intercom',count:'1 entry panel · 48 app users',status:'ok',warranty:'2027-06-30'},
+    {sys:'security',name:'Access control',count:'6 doors · 212 fobs',status:'ok',warranty:'2027-06-30'},
+    {sys:'security',name:'Video surveillance',count:'16 cameras · 30-day recording',status:'bad',note:'Lobby camera 4 offline since Oct 30',req:'EZ-2291',warranty:'2027-06-30'},
+    {sys:'network',name:'Common-area Wi-Fi',count:'5 access points',status:'ok',warranty:'2026-12-15'}]},
+  {id:'kings',name:'Kings Highway Medical Offices',hood:'Midwood, Brooklyn',type:'office',size:'3 floors · 11 suites',plan:'essential',ad:{video:0,monitor:0,after:false,wifi:8},nextPM:'2027-02-03',
+   systems:[
+    {sys:'network',name:'Structured cabling',count:'96 Cat6A drops',status:'ok',warranty:'2029-09-12'},
+    {sys:'network',name:'Wi-Fi',count:'8 access points',status:'warn',note:'AP-3 firmware out of date',req:'EZ-2279',warranty:'2026-09-12'},
+    {sys:'security',name:'Access control',count:'4 doors',status:'ok',warranty:'2026-09-12'},
+    {sys:'av',name:'Waiting room displays',count:'3 screens',status:'ok',warranty:'2025-09-12'}]},
+  {id:'ocean',name:'Ocean Parkway Residence',hood:'Gravesend, Brooklyn',type:'residence',size:'Townhouse · 4 floors',plan:'managed',ad:{video:0,monitor:0,after:true,wifi:0},nextPM:'2026-12-08',
+   systems:[
+    {sys:'av',name:'Home theater',count:'7.2.4 room · projector',status:'ok',warranty:'2027-03-04'},
+    {sys:'av',name:'Distributed audio',count:'9 zones',status:'ok',warranty:'2027-03-04'},
+    {sys:'automation',name:'Lighting and shades',count:'42 loads · 14 shades',status:'ok',warranty:'2027-03-04'},
+    {sys:'integration',name:'Control system',count:'3 touch panels · app',status:'ok',warranty:'2027-03-04'},
+    {sys:'security',name:'Cameras',count:'6 cameras',status:'ok',warranty:'2027-03-04'}]}
+ ],
+ reqs:[
+  {id:'EZ-2291',site:'shore',sys:'security',title:'Lobby camera 4 offline',pri:'Urgent',stage:2,created:'Oct 30',eta:'Mon, Nov 2 · 9–11 AM',tech:'Marcus R.',notes:['Remote check: camera not responding on the network. Likely power or cable fault.','Tech assigned. Super will meet at the lobby.']},
+  {id:'EZ-2287',site:'shore',sys:'security',title:'Program 12 fobs for new tenants (4B, 6A, 7C)',pri:'Routine',stage:1,created:'Oct 28',eta:'Wed, Nov 4 · done remotely',tech:'',notes:['Fobs ready. Programming scheduled.']},
+  {id:'EZ-2279',site:'kings',sys:'network',title:'Update AP-3 firmware',pri:'Routine',stage:0,created:'Oct 27',eta:'',tech:'',notes:[]},
+  {id:'EZ-2270',site:'ocean',sys:'automation',title:'Change evening shade schedule for winter',pri:'Routine',stage:4,created:'Oct 21',eta:'Closed Oct 22',tech:'Anna P.',notes:['Shades now close at sunset minus 15 minutes.']}
+ ],
+ inv:[
+  {id:'INV-10452',date:'2026-11-01',desc:'Care plans · November · 3 buildings',amount:1368,status:'due',due:'2026-11-15'},
+  {id:'INV-10418',date:'2026-10-24',desc:'Parts and labor · EZ-2262 intercom handset, apt 5D',amount:286.4,status:'paid'},
+  {id:'INV-10377',date:'2026-10-01',desc:'Care plans · October · 3 buildings',amount:1368,status:'paid'},
+  {id:'INV-10341',date:'2026-09-01',desc:'Care plans · September · 3 buildings',amount:1368,status:'paid'}
+ ],
+ docs:[
+  {name:'As-built riser diagram',site:'shore',kind:'Drawing',date:'2025-06-30'},
+  {name:'Q3 preventive maintenance report',site:'shore',kind:'Report',date:'2026-08-19'},
+  {name:'Warranty certificates',site:'shore',kind:'Warranty',date:'2025-06-30'},
+  {name:'Certificate of insurance 2026–27',site:'all',kind:'COI',date:'2026-07-01'},
+  {name:'Network port map',site:'kings',kind:'Drawing',date:'2024-09-12'},
+  {name:'Control system user guide',site:'ocean',kind:'Guide',date:'2025-03-04'}
+ ],
+ team:[
+  {name:'Dana Kim',email:'dana@harborview.example',role:'Admin',scope:'All buildings',status:'Active'},
+  {name:'Luis Ortega',email:'luis@harborview.example',role:'Superintendent',scope:'Shore Road Residences',status:'Active'},
+  {name:'Rachel Stein',email:'rachel@harborview.example',role:'Billing',scope:'All buildings',status:'Active'}
+ ]
+};
+function site(id){for(var i=0;i<D.sites.length;i++)if(D.sites[i].id===id)return D.sites[i];return null}
+var STAGES=['Received','Scheduled','Tech assigned','On site','Completed'];
+
+/* ---------- state ---------- */
+var S={
+ active:'all',cycleT:null,picked:false,bType:'multifamily',
+ q:{step:1,type:null,sys:[],project:null,size:{units:'',floors:'',doors:'',cams:''},time:null,c:{name:'',company:'',role:'',email:'',phone:'',address:'',borough:''},slot:null,err:'',done:null},
+ sv:{client:'no',sys:'',issue:'',desc:'',name:'',phone:'',email:'',address:'',borough:'',err:'',done:null},
+ auth:false,login:{email:'dana@harborview.example',pw:'demo-password',link:false},
+ cart:{},orderSite:'shore',orderDone:null,
+ reqFilter:'open',openReq:'EZ-2291',newReq:false,nr:{site:'shore',sys:'security',pri:'Routine',title:'',desc:'',access:''},nrErr:'',
+ siteSel:'shore',planPick:null,payConfirm:null,autopay:true,docSite:'all',coi:false,coiHolder:'',invite:false,inv:{name:'',email:'',role:'Superintendent',scope:'All buildings'}
+};
+
+/* ---------- toast ---------- */
+var toastT;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},3200)}
+
+/* ---------- riser section (hero) ---------- */
+function cam(x,y,flip){return '<g transform="translate('+x+' '+y+')'+(flip?' scale(-1 1)':'')+'"><path d="M-9-4h12v8h-12z" fill="currentColor" fill-opacity=".25"/><path d="M3-2l6-3v10l-6-3" /></g>'}
+function ap(x,y){return '<g transform="translate('+x+' '+y+')"><circle r="3" fill="currentColor"/><path d="M-7 7a10 10 0 0 1 14 0M-11 11a15 15 0 0 1 22 0" fill="none"/></g>'}
+function dot(x,y,bad){return '<g transform="translate('+x+' '+y+')">'+(bad?'<circle r="8" fill="none" stroke="#F07A5E" stroke-width="1.5" opacity=".7"/>':'')+'<circle r="4" fill="'+(bad?'#F07A5E':'#4CC08A')+'"/></g>'}
+function riserSVG(){
+ var g=function(sys,inner){return '<g class="dev" data-sys="'+sys+'" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">'+inner+'</g>'};
+ return '<svg viewBox="0 0 600 470" role="img" aria-labelledby="riserT riserD">'+
+ '<title id="riserT">Cross-section of a mixed-use building</title><desc id="riserD">A five-level building from cellar to penthouse showing where each EZTek system is installed. The highlighted system changes with the buttons below.</desc>'+
+ '<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v8" stroke="var(--hero-line)" stroke-width="1"/></pattern></defs>'+
+ // earth and cellar
+ '<rect x="20" y="360" width="560" height="100" fill="url(#hatch)" opacity=".55"/>'+
+ '<rect x="100" y="360" width="420" height="90" fill="var(--hero)" stroke="var(--hero-line)" stroke-width="1.5"/>'+
+ // building shell
+ '<path class="st" d="M100 360V40h420v320M94 40h432M20 360h560" stroke-width="2"/>'+
+ '<path class="st" d="M100 110h420M100 180h420M100 250h420"/>'+
+ '<path class="st" d="M320 110v70M200 268h40v92h-40zM220 268v92M420 296h44v64h-44zM340 230h90" />'+
+ // floor tags
+ '<text class="lbl lv" x="86" y="80" text-anchor="end">PH</text><text class="lbl lv" x="86" y="150" text-anchor="end">03</text><text class="lbl lv" x="86" y="220" text-anchor="end">02</text><text class="lbl lv" x="86" y="310" text-anchor="end">L</text><text class="lbl lv" x="86" y="410" text-anchor="end">C</text>'+
+ '<text class="lbl" x="512" y="104" text-anchor="end">RESIDENCE · R-3</text><text class="lbl" x="512" y="174" text-anchor="end">APARTMENTS · R-2</text><text class="lbl" x="512" y="244" text-anchor="end">OFFICE · B</text><text class="lbl" x="512" y="354" text-anchor="end">LOBBY</text><text class="lbl" x="512" y="444" text-anchor="end">CELLAR · MDF</text>'+
+ '<text class="lbl" x="24" y="404">FIBER IN</text>'+
+ // network
+ g('network','<path d="M140 444V48"/><circle cx="140" cy="110" r="3" fill="currentColor"/><circle cx="140" cy="180" r="3" fill="currentColor"/><circle cx="140" cy="250" r="3" fill="currentColor"/><circle cx="140" cy="360" r="3" fill="currentColor"/><path d="M24 418H156"/><rect x="156" y="378" width="34" height="62"/><path d="M161 390h24M161 400h24M161 410h24M161 420h24M161 430h24"/>'+ap(262,120)+ap(230,190)+ap(300,262)+ap(330,50))+
+ // security
+ g('security',cam(382,262)+cam(536,262)+cam(490,190,true)+cam(296,122)+cam(270,374)+'<rect x="406" y="320" width="7" height="13" fill="currentColor" fill-opacity=".25"/>')+
+ // intercom
+ g('intercom','<rect x="470" y="314" width="11" height="20"/><circle cx="475.5" cy="320" r="2"/><path d="M473 327h5M473 330h5"/><rect x="176" y="136" width="9" height="15"/><rect x="438" y="136" width="9" height="15"/><rect x="250" y="76" width="9" height="15"/>')+
+ // av
+ g('av','<rect x="152" y="54" width="82" height="38" fill="currentColor" fill-opacity=".12"/><path d="M193 92v6"/><rect x="360" y="194" width="52" height="28" fill="currentColor" fill-opacity=".12"/><circle cx="300" cy="186" r="4"/><circle cx="460" cy="186" r="4"/><path d="M140 62v12M246 62v12"/>')+
+ // automation
+ g('automation','<rect x="388" y="54" width="32" height="40"/><rect x="428" y="54" width="32" height="40"/><rect x="468" y="54" width="32" height="40"/><path d="M388 62h32M388 68h32M428 62h32M468 62h32M468 68h32M468 74h32"/><circle cx="380" cy="122" r="4"/><circle cx="410" cy="122" r="4"/><path d="M380 110v8M410 110v8"/><rect x="322" y="206" width="12" height="16" rx="2"/><circle cx="328" cy="214" r="3"/>')+
+ // integration
+ g('integration','<rect x="200" y="394" width="52" height="24"/><circle cx="210" cy="406" r="2" fill="currentColor"/><circle cx="218" cy="406" r="2" fill="currentColor"/><path d="M200 406H150" stroke-dasharray="4 4"/><path d="M146 78H300" stroke-dasharray="4 4"/><rect x="300" y="68" width="16" height="22" fill="currentColor" fill-opacity=".2"/><path d="M146 214H322" stroke-dasharray="4 4"/>')+
+ // maintenance status dots
+ '<g class="dots" data-sys="maintenance">'+dot(382,250,true)+dot(536,248)+dot(475,306)+dot(173,370)+dot(193,46)+dot(444,46)+dot(386,186)+dot(226,388)+dot(262,106)+'</g>'+
+ '</svg>';
+}
+function setActive(a){
+ S.active=a;
+ $$('.riser [data-sys]').forEach(function(el){
+  var on = a==='all' ? el.getAttribute('data-sys')!=='maintenance' : (a==='maintenance' ? true : el.getAttribute('data-sys')===a);
+  el.classList.toggle('on',on);
+ });
+ $$('.riser .chip').forEach(function(c){c.setAttribute('aria-pressed',String(c.getAttribute('data-v')===a))});
+ var cap=$('.riser figcaption');
+ if(cap) cap.innerHTML = a==='all' ? '<b>Seven systems in one building.</b> Pick a system to see where it goes, from the cellar rack to the penthouse.' : '<b>'+esc(SYSM[a].name)+'.</b> '+esc(SYSM[a].cap);
+}
+function startCycle(){
+ stopCycle();
+ if(S.picked) return;
+ try{ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+ var order=['all'].concat(SYS.map(function(s){return s.id})); var i=0;
+ S.cycleT=setInterval(function(){ i=(i+1)%order.length; setActive(order[i]); },2800);
+}
+function stopCycle(){ if(S.cycleT){clearInterval(S.cycleT);S.cycleT=null} }
+
+/* ---------- marketing views ---------- */
+function typeCard(t){
+ return '<button class="btype" data-act="goType" data-id="'+t.id+'"><span class="code"><span>OCCUPANCY '+esc(t.code)+'</span><span>'+esc(PLANS[t.plan].name)+' plan</span></span><h3>'+esc(t.name)+'</h3><p>'+esc(t.who)+'</p><span class="sysrow">'+t.systems.map(function(s){return '<i>'+icon(s)+esc(SYSM[s].short)+'</i>'}).join('')+'</span><span class="arrow">See what we install →</span></button>';
+}
+function vHome(){
+ return ''+
+ '<section class="hero"><div class="wrap hero-in">'+
+  '<div>'+
+   '<p class="eyebrow">Low-voltage systems integrator · New York metro · Est. 2004</p>'+
+   '<h1>Every system in your building, from the cellar rack to the roof.</h1>'+
+   '<p class="lede">EZTek designs, installs, programs and services security, intercom, audio-video, network and automation systems for apartment buildings, offices, homes and schools. One team, one contract, one number to call.</p>'+
+   '<div class="cta-row"><a class="btn lg" href="#quote">Book a site survey</a><a class="btn lg dark-ghost" href="#service">Something is broken</a></div>'+
+   '<dl class="facts"><div><dt>In business</dt><dd>Since 2004</dd></div><div><dt>Systems</dt><dd>7 types, one contract</dd></div><div><dt>Coverage</dt><dd>NYC metro area</dd></div></dl>'+
+  '</div>'+
+  '<figure class="riser">'+riserSVG()+
+   '<div class="chips" role="group" aria-label="Show a system"><button class="chip" data-act="riser" data-v="all" aria-pressed="true">All</button>'+SYS.map(function(s){return '<button class="chip" data-act="riser" data-v="'+s.id+'" aria-pressed="false">'+esc(s.short)+'</button>'}).join('')+'</div>'+
+   '<figcaption></figcaption>'+
+  '</figure>'+
+ '</div></section>'+
+
+ '<section class="band"><div class="wrap">'+
+  '<div class="sec-head"><p class="eyebrow">Start with your building</p><h2>Different buildings need different systems.</h2><p class="lede">Pick the one closest to yours. We show what owners in that kind of building usually ask for, and start your quote with it.</p></div>'+
+  '<div class="grid g3">'+TYPES.map(typeCard).join('')+'</div>'+
+ '</div></section>'+
+
+ '<section class="band alt"><div class="wrap">'+
+  '<div class="sec-head"><p class="eyebrow">What we do</p><h2>Seven systems, designed to work together.</h2></div>'+
+  '<div class="sys-grid">'+SYS.map(function(s){return '<a class="sys-tile" href="#services" data-act="goSvc" data-id="'+s.id+'" style="text-decoration:none;color:inherit">'+icon(s.id,'ic')+'<h3>'+esc(s.name)+'</h3><p>'+esc(s.desc)+'</p></a>'}).join('')+
+  '<div class="sys-tile"><h3>Not sure what you need?</h3><p>Tell us the problem. We will tell you which systems solve it and which ones you can skip.</p><a class="arrow" href="#quote" style="text-decoration:none">Describe your building →</a></div></div>'+
+ '</div></section>'+
+
+ '<section class="band"><div class="wrap">'+
+  '<div class="sec-head"><p class="eyebrow">How a project runs</p><h2>From the first walk-through to years of service.</h2></div>'+
+  '<ol class="process">'+
+   '<li><h4>Site survey</h4><p>We walk the building, check risers, conduit, closets and existing equipment.</p></li>'+
+   '<li><h4>Design and proposal</h4><p>Device layout, riser diagram and a line-item price you can compare.</p></li>'+
+   '<li><h4>Installation</h4><p>Cabling, mounting and terminations, labeled at both ends.</p></li>'+
+   '<li><h4>Programming and testing</h4><p>Every device commissioned and tested with you on site.</p></li>'+
+   '<li><h4>Handover</h4><p>As-built drawings, warranties and training, saved to your portal.</p></li>'+
+   '<li><h4>Service</h4><p>Care plan, maintenance visits and requests tracked online.</p></li>'+
+  '</ol>'+
+ '</div></section>'+
+
+ '<section class="band alt"><div class="wrap split">'+
+  '<div><p class="eyebrow">Client portal</p><h2 style="margin-top:12px">Your buildings, systems and invoices in one place.</h2><p class="lede" style="margin-top:14px">Each client account can have several users. Managers, supers and board members see what they need, and nothing else.</p>'+
+   '<ul class="checks"><li>Open a service request with photos and follow it until it is closed</li><li>See every system per building, with status and warranty dates</li><li>Change your care plan and add-ons yourself</li><li>Order fobs, cameras and programming changes at listed prices</li><li>Pay invoices, set up autopay</li><li>Download as-builts and request a certificate of insurance</li></ul>'+
+   '<div class="cta-row"><a class="btn" href="#portal">Open the demo portal</a></div></div>'+
+  '<div class="mock" aria-hidden="true"><div class="mock-bar"><i></i><i></i><i></i><span style="margin-left:8px">portal · Harbor View Property Group</span></div><div class="mock-body">'+
+   '<div class="grid g3" style="gap:8px"><div class="card kpi" style="padding:12px"><span class="k">Open requests</span><span class="v">3</span></div><div class="card kpi alert" style="padding:12px"><span class="k">Need attention</span><span class="v">2</span></div><div class="card kpi" style="padding:12px"><span class="k">Next visit</span><span class="v" style="font-size:1.2rem">Nov 12</span></div></div>'+
+   '<div class="mock-row"><span><b>Lobby camera 4 offline</b> · Shore Road</span><span class="pill info">Tech assigned</span></div>'+
+   '<div class="mock-row"><span><b>Program 12 fobs</b> · Shore Road</span><span class="pill mute">Scheduled</span></div>'+
+   '<div class="mock-row"><span><b>INV-10452</b> · Care plans, November</span><span class="pill warn">Due Nov 15</span></div>'+
+  '</div></div>'+
+ '</div></section>'+
+
+ '<section class="band"><div class="wrap">'+
+  '<div class="row sp" style="align-items:flex-end;margin-bottom:28px"><div class="sec-head" style="margin:0"><p class="eyebrow">Care plans <span class="draft">Draft prices</span></p><h2>Service you can budget for.</h2></div><a class="btn ghost" href="#plans">Compare plans</a></div>'+
+  '<div class="grid g3">'+['essential','priority','managed'].map(function(k){var p=PLANS[k];return '<div class="card tier'+(k==='priority'?' feature':'')+'"><span class="code"><span>'+p.name.toUpperCase()+'</span><span>per building</span></span><div class="price">'+(p.from?'<small>from </small>':'')+money(p.price)+'<small> /mo</small></div><p class="muted small">'+esc(p.blurb)+'</p></div>'}).join('')+'</div>'+
+ '</div></section>'+
+
+ '<section class="band alt"><div class="wrap">'+
+  '<div class="sec-head"><p class="eyebrow">Work and references</p><h2>Recent projects</h2><p class="muted">Content to collect from EZTek: three projects with photos and two or three client quotes, with permission.</p></div>'+
+  '<div class="grid g3">'+[1,2,3].map(function(i){return '<div class="slot"><div class="ph">Project photo '+i+'</div><b>Case study slot</b><span class="small">Building type, systems installed, problem solved, one number that changed.</span></div>'}).join('')+'</div>'+
+  '<div class="slot" style="margin-top:16px"><b>Client quote slot</b><span class="small">A sentence from a property manager or board member, with name, title and building. Do not publish until the client approves the wording.</span></div>'+
+ '</div></section>'+
+
+ '<section class="band tight"><div class="wrap"><div class="split" style="align-items:start"><div><p class="eyebrow">Where we work</p><h2 style="margin-top:12px">New York City and the metro area.</h2></div><div><p class="muted">Based in Bensonhurst, Brooklyn. We serve residential, commercial, multifamily, educational and institutional properties across the five boroughs and the surrounding metro area.</p><div class="boroughs"><span>Brooklyn</span><span>Manhattan</span><span>Queens</span><span>Staten Island</span><span>The Bronx</span><span>NYC metro</span></div></div></div></div></section>'+
+
+ ctaBand();
+}
+function ctaBand(){
+ return '<section class="cta-band"><div class="wrap cta-in"><div><h2>Tell us about your building.</h2><p>We come look at it, then send a line-item proposal.</p></div><div class="row"><a class="btn lg" href="#quote">Get a quote</a><a class="btn lg dark-ghost" href="tel:+18886939835">Call (888) 693-9835</a></div></div></section>';
+}
+
+function vBuildings(){
+ var t=TYPEM[S.bType]||TYPES[0];
+ return '<section class="band"><div class="wrap">'+
+  '<header class="page-head"><p class="eyebrow">Building types</p><h1 class="h-page">What we install, by building</h1><p class="lede">Codes show the usual NYC occupancy group for each type; your certificate of occupancy has the exact one. Mixed-use buildings get a plan for each part.</p></header>'+
+  '<div class="tabs" role="tablist" aria-label="Building type">'+TYPES.map(function(x){return '<button class="tab" role="tab" aria-selected="'+(x.id===t.id)+'" data-act="bTab" data-id="'+x.id+'"><small>'+esc(x.code)+'</small>'+esc(x.name)+'</button>'}).join('')+'</div>'+
+  '<div class="bpanel" role="tabpanel">'+
+   '<div class="card stack" style="padding:28px"><div class="big-code">'+esc(t.code)+'</div><h2>'+esc(t.name)+'</h2><p class="lede">'+esc(t.who)+'</p>'+
+   '<h4 style="margin-top:8px">What these buildings usually ask for</h4><ul class="checks" style="margin-top:0">'+t.needs.map(function(n){return '<li>'+esc(n)+'</li>'}).join('')+'</ul>'+
+   '<div class="cta-row" style="margin-top:12px"><button class="btn" data-act="quoteFor" data-id="'+t.id+'">Start a quote for this building</button></div></div>'+
+   '<div class="stack">'+t.systems.map(function(s){var x=SYSM[s];return '<div class="card row" style="align-items:flex-start;flex-wrap:nowrap;gap:14px">'+icon(s,'ic" style="width:30px;height:30px;flex-shrink:0;color:var(--fiber-ink)')+'<div class="stack" style="gap:4px"><h3>'+esc(x.name)+'</h3><p class="muted small">'+esc(x.desc)+'</p></div></div>'}).join('')+
+   '<div class="card" style="border-style:dashed"><span class="code"><span>SUGGESTED CARE PLAN</span><span class="draft">Draft</span></span><h3 style="margin-top:8px">'+PLANS[t.plan].name+' · '+(PLANS[t.plan].from?'from ':'')+money(PLANS[t.plan].price)+'/mo</h3><p class="muted small" style="margin-top:6px">'+esc(PLANS[t.plan].blurb)+'</p></div></div>'+
+  '</div>'+
+ '</div></section>'+ctaBand();
+}
+
+function vServices(){
+ return '<section class="band"><div class="wrap">'+
+  '<header class="page-head"><p class="eyebrow">Services</p><h1 class="h-page">Design, installation, programming and service</h1><p class="lede">We design and install new systems, maintain and upgrade existing ones, and connect them so they work as one.</p></header>'+
+  '<nav class="svc-index" aria-label="Jump to service">'+SYS.map(function(s){return '<a href="#services" data-act="goSvc" data-id="'+s.id+'">'+esc(s.short)+'</a>'}).join('')+'</nav>'+
+  SYS.map(function(s){return '<article class="svc-block" id="svc-'+s.id+'">'+icon(s.id,'ic')+'<div class="stack" style="gap:8px"><h2 style="font-size:1.5rem">'+esc(s.name)+'</h2><p class="muted">'+esc(s.desc)+'</p><div><button class="link" data-act="quoteSys" data-id="'+s.id+'">Get a quote for '+esc(s.short.toLowerCase())+'</button></div></div><ul>'+s.items.map(function(i){return '<li>'+esc(i)+'</li>'}).join('')+'</ul></article>'}).join('')+
+  '<div class="slot" style="margin-top:12px"><b>Brands and certifications slot</b><span class="small">List only manufacturers EZTek is authorized or certified to install, with proof on file.</span></div>'+
+ '</div></section>'+ctaBand();
+}
+
+function vPlans(){
+ return '<section class="band"><div class="wrap">'+
+  '<header class="page-head"><p class="eyebrow">Care plans</p><h1 class="h-page">Service plans for every building</h1><p class="lede">Billed per building, per month. Add or change a plan in the client portal at any time; changes start with the next billing cycle.</p></header>'+
+  '<div class="note" style="margin-bottom:24px"><span class="draft">Draft</span><span>Plan names, prices and terms are placeholders for EZTek to set. They are here to show the structure.</span></div>'+
+  '<div class="grid g3">'+['essential','priority','managed'].map(function(k){var p=PLANS[k];return '<div class="card tier'+(k==='priority'?' feature':'')+'" style="padding:24px"><span class="code"><span>'+p.name.toUpperCase()+'</span><span>'+(k==='priority'?'Most buildings':'')+'</span></span><div class="price">'+(p.from?'<small>from </small>':'')+money(p.price)+'<small> /building /mo</small></div><p class="muted">'+esc(p.blurb)+'</p><ul>'+PLAN_ROWS.filter(function(r){return r[{essential:1,priority:2,managed:3}[k]]!=='—'}).slice(0,6).map(function(r){var v=r[{essential:1,priority:2,managed:3}[k]];return '<li>'+esc(r[0])+(v==='✓'?'':': '+esc(v))+'</li>'}).join('')+'</ul><button class="btn'+(k==='priority'?'':' ghost')+'" data-act="quotePlan" data-id="'+k+'">Choose '+p.name+'</button></div>'}).join('')+'</div>'+
+  '<h2 style="margin:48px 0 16px;font-size:1.5rem">Compare plans</h2>'+
+  '<div class="tbl-wrap"><table class="cmp"><thead><tr><th>Included</th><th>Essential</th><th>Priority</th><th>Managed</th></tr></thead><tbody>'+PLAN_ROWS.map(function(r){return '<tr><td>'+esc(r[0])+'</td>'+r.slice(1).map(function(v){return '<td'+(v==='—'?' class="dash"':'')+'>'+esc(v)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'+
+  '<h2 style="margin:48px 0 16px;font-size:1.5rem">Add-ons</h2>'+
+  '<div class="tbl-wrap"><table><thead><tr><th>Add-on</th><th>What it does</th><th class="r">Price</th></tr></thead><tbody>'+ADDONS.map(function(a){return '<tr><td><b>'+esc(a.name)+'</b></td><td class="muted">'+esc(a.desc)+'</td><td class="r num">'+money(a.price)+' / '+a.unit+' / mo</td></tr>'}).join('')+'</tbody></table></div>'+
+  '<h2 style="margin:48px 0 8px;font-size:1.5rem">Questions</h2>'+
+  '<details class="faq"><summary>Do I need a plan to get service?</summary><p>No. Anyone can book a one-time service call. Plan clients get faster dispatch, lower labor rates and scheduled maintenance.</p></details>'+
+  '<details class="faq"><summary>Will you service a system another company installed?</summary><p><span class="draft">Confirm with EZTek</span> Proposed answer: yes, after a takeover inspection where we document what is there, test it and list what needs attention before it goes on a plan.</p></details>'+
+  '<details class="faq"><summary>Who in my company can use the portal?</summary><p>You add your own users. Give a super permission to open requests, a bookkeeper access to invoices, and a board member a read-only view.</p></details>'+
+  '<details class="faq"><summary>Can we cancel?</summary><p>Terms to be set by EZTek. Placeholder: month-to-month after the first 12 months, with 30 days notice.</p></details>'+
+ '</div></section>'+ctaBand();
+}
+
+/* ---------- quote wizard ---------- */
+function bizSlots(){
+ var out=[];var d=new Date();d.setHours(12,0,0,0);
+ while(out.length<5){d.setDate(d.getDate()+1);if(d.getDay()===0||d.getDay()===6)continue;var lab=DOW[d.getDay()]+' '+MON[d.getMonth()]+' '+d.getDate();out.push(lab+' · AM');out.push(lab+' · PM')}
+ return out;
+}
+function opt(type,name,val,checked,title,sub,chg){
+ return '<label class="opt"><input type="'+type+'" name="'+name+'" value="'+esc(val)+'"'+(checked?' checked':'')+' data-chg="'+chg+'"><b>'+title+'</b>'+(sub?'<span>'+sub+'</span>':'')+'</label>';
+}
+function inp(id,label,bind,val,type,ph,full,hint,ac){
+ return '<div class="field'+(full?' full':'')+'"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" data-bind="'+bind+'" value="'+esc(val)+'"'+(ac?' autocomplete="'+ac+'"':'')+(hint?' aria-describedby="'+id+'-h"':'')+(ph?' placeholder="'+esc(ph)+'"':'')+(type==='number'?' min="0" inputmode="numeric"':'')+'>'+(hint?'<span class="hint" id="'+id+'-h">'+hint+'</span>':'')+'</div>';
+}
+function sel(id,label,bind,val,options,full){
+ return '<div class="field'+(full?' full':'')+'"><label for="'+id+'">'+label+'</label><select id="'+id+'" data-bind="'+bind+'"><option value="">Choose…</option>'+options.map(function(o){return '<option'+(o===val?' selected':'')+'>'+esc(o)+'</option>'}).join('')+'</select></div>';
+}
+var BOROUGHS=['Brooklyn','Manhattan','Queens','Staten Island','The Bronx','Outside NYC'];
+var PROJECTS=[['new','New installation','New construction, gut renovation or a system you do not have yet'],['upgrade','Upgrade or replace','Old intercom, analog cameras, outdated network'],['takeover','Take over an existing system','Installed by someone else, needs a new service partner'],['add','Add to what we installed','More doors, cameras, rooms or users']];
+var TIMES=[['asap','As soon as possible'],['1-3','In 1–3 months'],['3+','In 3 months or more'],['budget','Budgeting only for now']];
+function stepHTML(n){
+ var q=S.q;
+ if(n===1) return '<div class="wiz-step"><div><h2 id="qstep" tabindex="-1" style="font-size:1.4rem">What kind of building is it?</h2><p class="muted small" style="margin-top:6px">Mixed-use? Pick the part this request is about.</p></div><div class="opts c2" role="radiogroup" aria-labelledby="qstep">'+TYPES.map(function(t){return opt('radio','qtype',t.id,q.type===t.id,esc(t.name),'<span class="mono">'+esc(t.code)+'</span> · '+esc(t.who),'qType')}).join('')+opt('radio','qtype','other',q.type==='other','Something else','Warehouse, parking, house of worship, other','qType')+'</div></div>';
+ if(n===2) return '<div class="wiz-step"><div><h2 id="qstep" tabindex="-1" style="font-size:1.4rem">Which systems?</h2><p class="muted small" style="margin-top:6px">Pick everything that applies. Not sure? Pick the closest and describe the problem in the next step.</p></div><div class="opts c2" role="group" aria-labelledby="qstep">'+SYS.map(function(s){return opt('checkbox','qsys',s.id,q.sys.indexOf(s.id)>-1,esc(s.name),esc(s.desc),'qSys')}).join('')+'</div></div>';
+ if(n===3){
+  var unitsL = q.type==='residence'?'Rooms to cover':'Apartments or suites';
+  return '<div class="wiz-step"><div><h2 id="qstep" tabindex="-1" style="font-size:1.4rem">Tell us about the project</h2></div><div class="opts c2" role="radiogroup" aria-labelledby="qstep">'+PROJECTS.map(function(p){return opt('radio','qproj',p[0],q.project===p[0],p[1],p[2],'qProj')}).join('')+'</div>'+
+  '<div><p class="lbl-t">Rough size</p><p class="muted small" style="margin:4px 0 12px">Estimates are fine. Leave blank what you do not know.</p><div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">'+
+   inp('q-units',unitsL,'q.size.units',q.size.units,'number')+inp('q-floors','Floors','q.size.floors',q.size.floors,'number')+inp('q-doors','Entrances and doors','q.size.doors',q.size.doors,'number')+inp('q-cams','Cameras wanted','q.size.cams',q.size.cams,'number')+
+  '</div></div><div><p class="lbl-t" id="qtime-l" style="margin-bottom:10px">When do you want it done?</p><div class="opts c2" role="radiogroup" aria-labelledby="qtime-l">'+TIMES.map(function(t){return opt('radio','qtime',t[0],q.time===t[0],t[1],'','qTime')}).join('')+'</div></div></div>';
+ }
+ var slots=bizSlots();
+ return '<div class="wiz-step"><div><h2 id="qstep" tabindex="-1" style="font-size:1.4rem">Where and who</h2><p class="muted small" style="margin-top:6px">We call to confirm before anyone comes out. All fields are required unless marked optional.</p></div><div class="form-grid">'+
+  inp('q-name','Your name','q.c.name',q.c.name,'text','','',null,'name')+inp('q-company','Company or building (optional)','q.c.company',q.c.company,'text','','',null,'organization')+
+  sel('q-role','Your role (optional)','q.c.role',q.c.role,['Owner','Property manager','Managing agent','Board member','Superintendent','Homeowner','Architect or designer','General contractor','Other'])+
+  sel('q-borough','Borough (optional)','q.c.borough',q.c.borough,BOROUGHS)+
+  inp('q-email','Email','q.c.email',q.c.email,'email','','','Email or phone, at least one','email')+inp('q-phone','Phone','q.c.phone',q.c.phone,'tel','','','Email or phone, at least one','tel')+
+  inp('q-addr','Building address','q.c.address',q.c.address,'text','Street, city, ZIP',true,null,'street-address')+
+ '</div><div><p class="lbl-t">Preferred survey window</p><p class="muted small" style="margin:4px 0 10px">Optional. AM is 8–12, PM is 12–5.</p><div class="slots">'+slots.map(function(s){return '<button type="button" class="slotbtn" data-act="qSlot" data-v="'+esc(s)+'" aria-pressed="'+(q.slot===s)+'">'+esc(s)+'</button>'}).join('')+'</div></div></div>';
+}
+function qSummary(){
+ var q=S.q,rows=[];
+ rows.push(['Building', q.type ? (q.type==='other'?'Something else':TYPEM[q.type].name) : null]);
+ rows.push(['Systems', q.sys.length ? q.sys.map(function(s){return SYSM[s].short}).join(', ') : null]);
+ var pj=PROJECTS.filter(function(p){return p[0]===q.project})[0]; rows.push(['Project', pj?pj[1]:null]);
+ var sz=[];if(q.size.units)sz.push(q.size.units+(q.type==='residence'?' rooms':' units'));if(q.size.floors)sz.push(q.size.floors+' floors');if(q.size.doors)sz.push(q.size.doors+' doors');if(q.size.cams)sz.push(q.size.cams+' cameras');
+ rows.push(['Size', sz.length?sz.join(' · '):null]);
+ var tm=TIMES.filter(function(t){return t[0]===q.time})[0]; rows.push(['Timing', tm?tm[1]:null]);
+ rows.push(['Care plan', q.plan?PLANS[q.plan].name:null]);
+ rows.push(['Survey', q.slot]);
+ return '<span class="code"><span>YOUR REQUEST</span><span>Step '+q.step+' of 4</span></span>'+rows.map(function(r){return '<div class="sum-row"><span>'+r[0]+'</span><span'+(r[1]?'':' class="sum-empty"')+'>'+(r[1]?esc(r[1]):'Not set')+'</span></div>'}).join('')+
+ '<p class="small muted" style="border-top:1px solid var(--line2);padding-top:12px">Questions first? Call <span class="num">(888) 693-9835</span>.</p>';
+}
+function vQuote(){
+ var q=S.q;
+ if(q.done) return '<section class="band"><div class="wrap"><div class="card done-card" style="padding:clamp(20px,4vw,36px)"><p class="eyebrow">Request received</p><div class="ticket-id">'+q.done.id+'</div><h1 class="h-page" style="font-size:clamp(1.6rem,3vw,2.3rem)">Thanks, '+esc(q.c.name.split(' ')[0]||'there')+'. We have what we need to plan the survey.</h1>'+
+  '<p class="muted">'+esc(q.type==='other'?'Building':TYPEM[q.type].name)+' · '+esc(q.sys.map(function(s){return SYSM[s].short}).join(', '))+(q.plan?' · '+PLANS[q.plan].name+' plan':'')+(q.slot?' · preferred window '+esc(q.slot):'')+'</p>'+
+  '<h3>What happens next</h3><ol class="next"><li>We call you at '+esc(q.c.phone||q.c.email)+' to confirm the survey window.</li><li>A technician walks the building with you.</li><li>You get a line-item proposal in your client portal, with drawings.</li></ol>'+
+  '<div class="note"><span class="draft">Prototype</span><span>In production this request goes to EZTek by email and into the CRM, and you get a confirmation text.</span></div>'+
+  '<div class="row"><a class="btn" href="#portal">See the client portal</a><button class="btn ghost" data-act="qReset">Start another request</button></div></div></div></section>';
+ return '<section class="band"><div class="wrap">'+
+  '<header class="page-head"><p class="eyebrow">Site survey and proposal</p><h1 class="h-page">Get a quote</h1><p class="lede">Four short steps. Your answers let us plan the survey, so the first visit is useful.</p></header>'+
+  '<div class="wiz"><div class="card" style="padding:clamp(18px,3vw,28px)">'+
+   '<ol class="steps">'+['Building','Systems','Project','Contact'].map(function(s,i){return '<li class="'+(i+1===q.step?'cur':'')+(i+1<q.step?' done':'')+'"'+(i+1===q.step?' aria-current="step"':'')+'><span><span class="mono">'+(i+1)+'</span><span class="st-l">'+s+'</span></span></li>'}).join('')+'</ol>'+
+   stepHTML(q.step)+
+   (q.err?'<p class="err" role="alert">'+esc(q.err)+'</p>':'')+
+   '<div class="wiz-nav">'+(q.step>1?'<button class="btn ghost" data-act="qBack">Back</button>':'<span></span>')+'<button class="btn" data-act="qNext">'+(q.step<4?'Continue':'Send request')+'</button></div>'+
+  '</div><aside class="card wiz-sum" id="qsum">'+qSummary()+'</aside></div>'+
+ '</div></section>';
+}
+
+/* ---------- service call ---------- */
+var ISSUES=[['entry','Entry, intercom or door system down','People cannot get in or the door will not lock'],['video','Cameras or recording not working',''],['net','Network, Wi-Fi or phones down',''],['avc','Audio, video, lighting or shades',''],['other','Something else','']];
+function vService(){
+ var v=S.sv;
+ if(v.done) return '<section class="band"><div class="wrap"><div class="card done-card" style="padding:clamp(20px,4vw,36px)"><p class="eyebrow">Service request received</p><div class="ticket-id">'+v.done+'</div><h1 class="h-page" style="font-size:clamp(1.6rem,3vw,2.3rem)">A dispatcher will call you to confirm a visit window.</h1><p class="muted">Keep the request number. If the situation changes, call <span class="num">(888) 693-9835</span> and give it to us.</p><div class="note"><span class="draft">Prototype</span><span>In production this opens a ticket in the dispatch system and texts you updates.</span></div><div class="row"><a class="btn" href="#plans">See care plans</a><button class="btn ghost" data-act="svReset">New request</button></div></div></div></section>';
+ return '<section class="band"><div class="wrap">'+
+  '<header class="page-head"><p class="eyebrow">Service and repair</p><h1 class="h-page">Something stopped working?</h1><p class="lede">Tell us what stopped working. A dispatcher calls you back to set a visit.</p></header>'+
+  '<div class="grid g2" style="align-items:start">'+
+   '<div class="card stack" style="padding:24px"><h3>Already on a care plan?</h3><p class="muted">Open the request in your portal. It goes straight to dispatch with your building, systems and history attached.</p><a class="btn" href="#portal-requests">Sign in and open a request</a><p class="small muted">Building cannot be secured right now? Call <span class="num">(888) 693-9835</span>.</p></div>'+
+   '<form class="card stack" id="svForm" style="padding:24px" novalidate><h3>Not a client yet</h3><p class="lbl-t" id="sv-issue-l">What is not working?</p>'+
+    '<div class="opts" role="radiogroup" aria-labelledby="sv-issue-l">'+ISSUES.map(function(i){return opt('radio','svissue',i[0],v.issue===i[0],i[1],i[2],'svIssue')}).join('')+'</div>'+
+    '<div class="field"><label for="sv-desc">What is happening?</label><textarea id="sv-desc" data-bind="sv.desc" placeholder="What stopped working, since when, any error on the screen">'+esc(v.desc)+'</textarea></div>'+
+    '<div class="form-grid">'+inp('sv-name','Your name','sv.name',v.name,'text','','',null,'name')+inp('sv-phone','Phone','sv.phone',v.phone,'tel','','',null,'tel')+inp('sv-email','Email (optional)','sv.email',v.email,'email','','',null,'email')+sel('sv-borough','Borough (optional)','sv.borough',v.borough,BOROUGHS)+inp('sv-addr','Address','sv.address',v.address,'text','Street, city, ZIP',true,null,'street-address')+'</div>'+
+    '<div class="note"><span class="draft">Draft</span><span>Diagnostic visit $175, credited toward the repair if you go ahead.</span></div>'+
+    (v.err?'<p class="err" role="alert">'+esc(v.err)+'</p>':'')+
+    '<button class="btn" type="submit">Send service request</button>'+
+   '</form>'+
+  '</div></div></section>';
+}
+
+/* ---------- portal ---------- */
+function openReqs(){return D.reqs.filter(function(r){return r.stage<4})}
+function attention(){var out=[];D.sites.forEach(function(s){s.systems.forEach(function(x){if(x.status!=='ok')out.push({site:s,sys:x})})});return out}
+function dueTotal(){return D.inv.filter(function(i){return i.status==='due'}).reduce(function(a,i){return a+i.amount},0)}
+function cartCount(){var n=0;for(var k in S.cart)n+=S.cart[k];return n}
+function siteMonthly(s){
+ var p=PLANS[s.plan].price,ad=s.ad,m=s.plan==='managed';
+ return p + ad.video*3 + (m?0:ad.monitor*2) + ((ad.after&&!m)?120:0) + ad.wifi*4;
+}
+function stPill(st){return st==='ok'?'<span class="pill ok">Working</span>':st==='warn'?'<span class="pill warn">Needs update</span>':'<span class="pill bad">Down</span>'}
+function stagePill(n){return n===4?'<span class="pill ok">Completed</span>':n===0?'<span class="pill mute">Received</span>':n===1?'<span class="pill mute">Scheduled</span>':'<span class="pill info">'+STAGES[n]+'</span>'}
+function prog(n){var h='';for(var i=0;i<5;i++)h+='<i class="'+(i<=n?'f':'')+'"></i>';return '<span class="prog" role="img" aria-label="Status: '+STAGES[n]+'">'+h+'</span>'}
+
+function vLogin(){
+ var l=S.login;
+ return '<section class="band tight"><div class="wrap"><form class="card login" id="loginForm" style="padding:28px" novalidate>'+
+  '<p class="eyebrow">Client portal</p><h1 style="font-size:1.8rem">Sign in</h1>'+
+  '<div class="note"><span class="draft">Demo</span><span>This is a demo account for a fictional property manager. Any password works.</span></div>'+
+  '<div class="field"><label for="lg-email">Email</label><input id="lg-email" type="email" data-bind="login.email" value="'+esc(l.email)+'" autocomplete="username"></div>'+
+  '<div class="field"><label for="lg-pw">Password</label><input id="lg-pw" type="password" data-bind="login.pw" value="'+esc(l.pw)+'" autocomplete="current-password"></div>'+
+  '<button class="btn" type="submit">Sign in</button>'+
+  '<button class="btn ghost" type="button" data-act="magic">Email me a sign-in link instead</button>'+
+  (l.link?'<p class="small" role="status" style="color:var(--ok);font-weight:600">Demo: a sign-in link would be sent to '+esc(l.email)+'.</p>':'')+
+  '<p class="small muted">No account yet? Accounts are created when you sign a proposal or care plan. <a href="#quote">Get a quote</a></p>'+
+ '</form></div></section>';
+}
+
+var PNAV=[['overview','Overview'],['sites','Buildings'],['requests','Service requests'],['plans','Plans and add-ons'],['order','Order services'],['billing','Billing'],['docs','Documents'],['team','Team']];
+function vPortal(sub){
+ if(!P[sub]) sub='overview';
+ var badges={requests:openReqs().length,order:cartCount(),billing:dueTotal()>0?'!':0};
+ return '<div class="wrap portal"><aside class="p-side"><div class="p-acct"><span class="mono">ACCOUNT</span><strong>Harbor View Property Group</strong><span>Dana Kim · Property manager</span></div>'+
+  '<nav class="p-nav" aria-label="Portal">'+PNAV.map(function(n){var b=badges[n[0]];return '<a href="#portal-'+n[0]+'"'+(n[0]===sub?' aria-current="page"':'')+'>'+n[1]+(b?'<span class="badge'+(b==='!'?' alert':'')+'">'+b+'</span>':'')+'</a>'}).join('')+'</nav>'+
+  '<button class="btn ghost sm" data-act="signOut">Sign out</button></aside>'+
+  '<section class="p-main" id="pmain">'+P[sub]()+'</section></div>';
+}
+function pHead(title,sub,action){return '<div class="p-head"><div><h1>'+title+'</h1>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(action||'')+'</div>'}
+var newReqBtn='<button class="btn" data-act="newReqGo">New service request</button>';
+
+var P={};
+P.overview=function(){
+ var h=new Date().getHours(),greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+ var att=attention(),or=openReqs();
+ var next=D.sites.slice().sort(function(a,b){return a.nextPM<b.nextPM?-1:1})[0];
+ return pHead(greet+', Dana','3 buildings · '+or.length+' open requests',newReqBtn)+
+ '<div class="kpis">'+
+  '<div class="card kpi"><span class="k">Open requests</span><span class="v">'+or.length+'</span><span class="s">'+or.filter(function(r){return r.stage>=2}).length+' with a tech assigned</span></div>'+
+  '<div class="card kpi'+(att.length?' alert':'')+'"><span class="k">Need attention</span><span class="v">'+att.length+'</span><span class="s">'+att.filter(function(a){return a.sys.status==='bad'}).length+' down, '+att.filter(function(a){return a.sys.status==='warn'}).length+' need update</span></div>'+
+  '<div class="card kpi"><span class="k">Next maintenance</span><span class="v" style="font-size:1.45rem">'+fmtD(next.nextPM).replace(/, \d+$/,'')+'</span><span class="s">'+esc(next.name)+'</span></div>'+
+  '<div class="card kpi"><span class="k">Balance due</span><span class="v">'+money(dueTotal())+'</span><span class="s">'+(dueTotal()?'Due Nov 15':'Nothing due')+'</span></div>'+
+ '</div>'+
+ '<div class="stack"><h2 style="font-size:1.2rem">Needs attention</h2><div class="list">'+(att.length?att.map(function(a){var r=null;D.reqs.forEach(function(x){if(x.id===a.sys.req)r=x});return '<div class="li sev-'+a.sys.status+'"><div><div class="t">'+esc(a.sys.note)+'</div><div class="m"><span>'+esc(a.site.name)+'</span><span>'+esc(a.sys.name)+'</span>'+(r?'<span class="mono">'+r.id+'</span>':'')+'</div></div><div class="row">'+(r?stagePill(r.stage):'')+'<a class="btn ghost sm" href="#portal-requests" data-act="openReq" data-id="'+(r?r.id:'')+'">View</a></div></div>'}).join(''):'<div class="li"><div class="t">All systems are working.</div></div>')+'</div></div>'+
+ '<div class="grid g2" style="align-items:start">'+
+  '<div class="stack"><h2 style="font-size:1.2rem">Open requests</h2><div class="list">'+or.map(function(r){return '<div class="li"><div><div class="t">'+esc(r.title)+'</div><div class="m"><span class="mono">'+r.id+'</span><span>'+esc(site(r.site).name)+'</span>'+(r.eta?'<span>'+esc(r.eta)+'</span>':'')+'</div></div>'+prog(r.stage)+'</div>'}).join('')+'</div></div>'+
+  '<div class="stack"><h2 style="font-size:1.2rem">Service this quarter</h2><div class="card"><span class="code"><span>EZTEK ON YOUR ACCOUNT</span><span>Demo data</span></span>'+
+   metric('Requests answered within 4 hours',23,25)+metric('Fixed on the first visit',19,22)+metric('Maintenance visits on schedule',6,6)+
+  '</div></div>'+
+ '</div>';
+};
+function metric(label,a,b){var p=Math.round(a/b*100);return '<div class="metric"><span>'+label+'</span><span class="bar"><i style="width:'+p+'%"></i></span><span class="num" style="text-align:right">'+a+'/'+b+'</span></div>'}
+
+P.sites=function(){
+ var s=site(S.siteSel)||D.sites[0];
+ var docs=D.docs.filter(function(d){return d.site===s.id||d.site==='all'});
+ return pHead('Buildings','Systems, status and warranties for each building')+
+ '<div class="tabs" role="tablist" aria-label="Building">'+D.sites.map(function(x){var bad=x.systems.some(function(y){return y.status!=='ok'});return '<button class="tab" role="tab" aria-selected="'+(x.id===s.id)+'" data-act="siteTab" data-id="'+x.id+'"><small>'+esc(TYPEM[x.type].code)+' · '+esc(x.hood.split(',')[0])+(bad?' · ●':'')+'</small>'+esc(x.name)+'</button>'}).join('')+'</div>'+
+ '<div class="card row sp"><div class="stack" style="gap:4px"><h2 style="font-size:1.4rem">'+esc(s.name)+'</h2><span class="muted small">'+esc(s.hood)+' · '+esc(s.size)+' · '+esc(TYPEM[s.type].name)+'</span></div><div class="row"><span class="pill info">'+PLANS[s.plan].name+' plan</span><span class="pill mute">Next visit '+fmtD(s.nextPM)+'</span><button class="btn sm" data-act="newReqSite" data-id="'+s.id+'">Request service here</button></div></div>'+
+ '<div class="tbl-wrap"><table><thead><tr><th>System</th><th>Equipment</th><th>Status</th><th>Warranty until</th></tr></thead><tbody>'+s.systems.map(function(x){var exp=x.warranty<'2026-10-31';return '<tr><td><span class="row" style="flex-wrap:nowrap;gap:8px">'+icon(x.sys,'" style="width:18px;height:18px;color:var(--fiber-ink);flex-shrink:0')+'<b>'+esc(x.name)+'</b></span></td><td class="muted">'+esc(x.count)+'</td><td>'+stPill(x.status)+(x.note?'<div class="small muted" style="margin-top:4px">'+esc(x.note)+'</div>':'')+'</td><td class="num">'+fmtD(x.warranty)+(exp?' <span class="pill mute">Expired</span>':'')+'</td></tr>'}).join('')+'</tbody></table></div>'+
+ '<div class="stack"><h2 style="font-size:1.2rem">Documents for this building</h2><div class="list">'+docs.map(function(d){return '<div class="li"><div><div class="t">'+esc(d.name)+'</div><div class="m"><span class="mono">'+esc(d.kind)+'</span><span>'+fmtD(d.date)+'</span></div></div><button class="btn ghost sm" data-act="demoFile">Open</button></div>'}).join('')+'</div></div>';
+};
+
+P.requests=function(){
+ var f=S.reqFilter;
+ var list=D.reqs.filter(function(r){return f==='all'?true:f==='open'?r.stage<4:r.stage===4});
+ var nr=S.nr;
+ var form = S.newReq ? '<form class="card stack" id="nrForm" style="padding:22px" novalidate><div class="row sp"><h2 style="font-size:1.2rem">New service request</h2><button type="button" class="link" data-act="newReqClose">Cancel</button></div>'+
+   '<div class="form-grid">'+
+    '<div class="field"><label for="nr-site">Building</label><select id="nr-site" data-bind="nr.site">'+D.sites.map(function(s){return '<option value="'+s.id+'"'+(nr.site===s.id?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>'+
+    '<div class="field"><label for="nr-sys">System</label><select id="nr-sys" data-bind="nr.sys">'+SYS.map(function(s){return '<option value="'+s.id+'"'+(nr.sys===s.id?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>'+
+    '<div class="full"><p class="lbl-t" id="nr-pri-l" style="margin-bottom:8px">How urgent?</p><div class="opts c3" role="radiogroup" aria-labelledby="nr-pri-l">'+opt('radio','nrpri','Routine',nr.pri==='Routine','Routine','Schedule a visit','nrPri')+opt('radio','nrpri','Urgent',nr.pri==='Urgent','Urgent','Affecting residents or staff','nrPri')+opt('radio','nrpri','Emergency',nr.pri==='Emergency','Emergency','Entry or security is down','nrPri')+'</div></div>'+
+    inp('nr-title','Short summary','nr.title',nr.title,'text','For example: Back door reader not reading fobs',true)+
+    '<div class="field full"><label for="nr-desc">Details</label><textarea id="nr-desc" data-bind="nr.desc" placeholder="What happens, since when, which unit or door">'+esc(nr.desc)+'</textarea></div>'+
+    inp('nr-access','Access notes','nr.access',nr.access,'text','Who meets the tech, where the keys are',false)+
+    '<div class="field"><label for="nr-photo">Photos</label><input id="nr-photo" type="file" accept="image/*" multiple></div>'+
+   '</div><div class="note" id="nr-emerg"'+(nr.pri==='Emergency'?'':' hidden')+'><span class="draft">Tip</span><span>For an emergency, also call <span class="num">(888) 693-9835</span> so dispatch hears it right away.</span></div>'+
+   (S.nrErr?'<p class="err" role="alert">'+esc(S.nrErr)+'</p>':'')+
+   '<div><button class="btn" type="submit">Send request</button></div></form>' : '';
+ return pHead('Service requests','Every request, with its status and notes from the tech', S.newReq?'':newReqBtn)+form+
+ '<div class="seg" role="group" aria-label="Filter">'+[['open','Open'],['done','Completed'],['all','All']].map(function(x){return '<button data-act="reqFilter" data-v="'+x[0]+'" aria-pressed="'+(f===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+
+ '<div class="list">'+(list.length?list.map(function(r){var open=S.openReq===r.id;return '<div class="req"><button class="li-btn" data-act="toggleReq" data-id="'+r.id+'" aria-expanded="'+open+'"><span><span class="t">'+esc(r.title)+'</span><span class="m"><span class="mono">'+r.id+'</span><span>'+esc(site(r.site).name)+'</span><span>'+esc(r.pri)+'</span><span>Opened '+esc(r.created)+'</span></span></span><span class="row">'+stagePill(r.stage)+'</span></button>'+
+  (open?'<div class="req-detail"><ol class="timeline">'+STAGES.map(function(s,i){return '<li class="'+(i<=r.stage?'f':'')+'">'+s+'</li>'}).join('')+'</ol>'+
+   ((r.eta||r.tech)?'<div class="row small">'+(r.eta?'<span><b>Window:</b> '+esc(r.eta)+'</span>':'')+(r.tech?'<span><b>Technician:</b> '+esc(r.tech)+'</span>':'')+'</div>':'')+
+   (r.notes.length?'<div class="stack" style="gap:8px">'+r.notes.map(function(n){return '<p class="small" style="padding-left:12px;border-left:2px solid var(--line)">'+esc(n)+'</p>'}).join('')+'</div>':'<p class="small muted">No notes yet.</p>')+
+   (r.stage<4?'<form class="row" data-note="'+r.id+'" style="flex-wrap:nowrap"><label class="sr" for="note-'+r.id+'">Add a note</label><input id="note-'+r.id+'" type="text" placeholder="Add a note for the tech"><button class="btn sm" type="submit">Add</button></form>':'')+
+  '</div>':'')+'</div>'}).join(''):'<div class="li"><div class="t">Nothing here.</div></div>')+'</div>';
+};
+
+P.plans=function(){
+ var total=D.sites.reduce(function(a,s){return a+siteMonthly(s)},0);
+ return pHead('Plans and add-ons','Changes start with the next billing cycle, Dec 1')+
+ '<div class="note"><span class="draft">Draft</span><span>Prices are placeholders for EZTek to set.</span></div>'+
+ D.sites.map(function(s){
+  var m=s.plan==='managed',pp=S.planPick&&S.planPick.site===s.id?S.planPick.plan:null;
+  return '<div class="card stack" style="padding:22px"><div class="row sp"><div><h2 style="font-size:1.25rem">'+esc(s.name)+'</h2><span class="muted small">'+esc(TYPEM[s.type].name)+' · '+esc(s.size)+'</span></div><div class="price" style="font-size:1.6rem">'+money(siteMonthly(s))+'<small> /mo</small></div></div>'+
+  '<div class="seg" role="group" aria-label="Plan for '+esc(s.name)+'">'+['essential','priority','managed'].map(function(k){return '<button data-act="planPick" data-site="'+s.id+'" data-v="'+k+'" aria-pressed="'+(s.plan===k)+'">'+PLANS[k].name+' · '+money(PLANS[k].price)+'</button>'}).join('')+'</div>'+
+  (pp?'<div class="confirm"><span>Switch to <b>'+PLANS[pp].name+'</b> at '+money(PLANS[pp].price)+'/mo starting Dec 1?</span><button class="btn sm" data-act="planOk">Confirm change</button><button class="link" data-act="planCancel">Cancel</button></div>':'')+
+  '<div>'+ADDONS.map(function(a){
+    var incl=m&&(a.id==='monitor'||a.id==='after');
+    var ctl;
+    if(a.id==='after') ctl='<button class="toggle" data-act="adToggle" data-site="'+s.id+'" aria-pressed="'+(incl||s.ad.after)+'" aria-label="'+a.name+'"'+(incl?' disabled':'')+'></button>';
+    else ctl='<span class="qty"><button data-act="adStep" data-site="'+s.id+'" data-id="'+a.id+'" data-d="-1" aria-label="Fewer"'+(incl?' disabled':'')+'>−</button><input type="number" min="0" aria-label="'+a.name+' quantity" value="'+(incl?0:s.ad[a.id])+'" data-ad="'+s.id+':'+a.id+'"'+(incl?' disabled':'')+'><button data-act="adStep" data-site="'+s.id+'" data-id="'+a.id+'" data-d="1" aria-label="More"'+(incl?' disabled':'')+'>+</button></span>';
+    return '<div class="addon"><div><b>'+a.name+'</b> <span class="muted small num">'+money(a.price)+' / '+a.unit+'</span><div class="d">'+(incl?'Included in Managed.':esc(a.desc))+'</div></div>'+ctl+'</div>';
+  }).join('')+'</div></div>';
+ }).join('')+
+ '<div class="card row sp"><b>Monthly total, all buildings</b><span class="price" style="font-size:1.6rem">'+money(total)+'<small> /mo</small></span></div>';
+};
+
+P.order=function(){
+ if(S.orderDone){var o=S.orderDone;return pHead('Order placed','')+'<div class="card done-card" style="padding:26px"><div class="ticket-id">'+o.id+'</div><p>'+esc(o.lines)+' for '+esc(site(o.site).name)+'. Total '+money(o.total)+(o.quote?' plus items to be quoted':'')+'.</p><p class="muted">We opened request <span class="mono">'+o.req+'</span> to schedule it. You will see the visit window there.</p><div class="row"><a class="btn" href="#portal-requests" data-act="openReq" data-id="'+o.req+'">View request</a><button class="btn ghost" data-act="orderAgain">Order something else</button></div></div>';}
+ var lines=[],total=0,quote=false;
+ for(var k in S.cart){var c=CATM[k],n=S.cart[k];if(!n)continue;if(c.quote){quote=true;lines.push('<div class="cart-line"><span>'+esc(c.name)+'</span><span class="muted">Quote</span></div>')}else{total+=c.price*n;lines.push('<div class="cart-line"><span>'+n+' × '+esc(c.name)+'</span><span class="num">'+money(c.price*n)+'</span></div>')}}
+ return pHead('Order services','Fixed prices for common jobs. Larger work gets a quote.')+
+ '<div class="order-layout"><div class="stack"><div class="note"><span class="draft">Draft</span><span>Prices are placeholders for EZTek to set.</span></div><div class="grid g2">'+CATALOG.map(function(c){var n=S.cart[c.id]||0;return '<div class="card cat"><div class="stack" style="gap:6px"><span class="code"><span>'+esc(SYSM[c.sys].short.toUpperCase())+'</span></span><h3>'+esc(c.name)+'</h3><p class="muted small">'+esc(c.desc)+'</p></div><div class="cat-foot"><span class="pr">'+(c.quote?'Quote':(c.from?'<small class="muted" style="font-size:12px">from </small>':'')+money(c.price))+'</span>'+
+   (c.quote?(n?'<button class="btn ghost sm" data-act="cartSet" data-id="'+c.id+'" data-v="0">Remove</button>':'<button class="btn ghost sm" data-act="cartSet" data-id="'+c.id+'" data-v="1">Request quote</button>'):
+   (n?'<span class="qty"><button data-act="cartStep" data-id="'+c.id+'" data-d="-1" aria-label="Fewer">−</button><input type="number" value="'+n+'" aria-label="Quantity" readonly><button data-act="cartStep" data-id="'+c.id+'" data-d="1" aria-label="More">+</button></span>':'<button class="btn sm" data-act="cartStep" data-id="'+c.id+'" data-d="1">Add</button>'))+'</div></div>'}).join('')+'</div></div>'+
+ '<aside class="card cart"><h3>Your order</h3><div class="field"><label for="ord-site">For building</label><select id="ord-site" data-bind="orderSite">'+D.sites.map(function(s){return '<option value="'+s.id+'"'+(S.orderSite===s.id?' selected':'')+'>'+esc(s.name)+'</option>'}).join('')+'</select></div>'+
+  (lines.length?lines.join('')+'<div class="total"><span>Total</span><span class="num">'+money(total)+'</span></div><p class="small muted">Billed after the work is done. Plan discounts apply to labor.</p><button class="btn" data-act="checkout">Place order</button>':'<p class="muted small">Nothing added yet.</p>')+
+ '</aside></div>';
+};
+
+P.billing=function(){
+ var due=dueTotal();
+ return pHead('Billing','Invoices for all buildings')+
+ '<div class="grid g3">'+
+  '<div class="card kpi'+(due?' alert':'')+'"><span class="k">Balance due</span><span class="v">'+money2(due)+'</span><span class="s">'+(due?'INV-10452 due Nov 15':'All paid')+'</span></div>'+
+  '<div class="card kpi"><span class="k">Payment method</span><span class="v" style="font-size:1.2rem">Visa ending 4242</span><span class="s"><button class="link" data-act="demoFile">Update</button></span></div>'+
+  '<div class="card kpi"><span class="k">Autopay</span><span class="row" style="margin-top:4px"><button class="toggle" data-act="autopay" aria-pressed="'+S.autopay+'" aria-label="Autopay"></button><b>'+(S.autopay?'On':'Off')+'</b></span><span class="s">'+(S.autopay?'Plan invoices charged on the due date':'You pay each invoice yourself')+'</span></div>'+
+ '</div>'+
+ '<div class="tbl-wrap"><table><thead><tr><th>Invoice</th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Status</th><th></th></tr></thead><tbody>'+D.inv.map(function(i){
+  var pc=S.payConfirm===i.id;
+  return '<tr><td class="mono">'+i.id+'</td><td class="num">'+fmtD(i.date)+'</td><td>'+esc(i.desc)+'</td><td class="r num">'+money2(i.amount)+'</td><td>'+(i.status==='due'?'<span class="pill warn">Due '+fmtD(i.due).replace(/, \d+$/,'')+'</span>':'<span class="pill ok">Paid</span>')+'</td><td class="r">'+
+   (i.status==='due'?(pc?'<span class="row" style="justify-content:flex-end;flex-wrap:nowrap"><button class="btn sm" data-act="payOk" data-id="'+i.id+'">Pay '+money2(i.amount)+'</button><button class="link" data-act="payCancel">Cancel</button></span>':'<button class="btn sm" data-act="pay" data-id="'+i.id+'">Pay</button>'):'<button class="btn ghost sm" data-act="demoFile">PDF</button>')+'</td></tr>'}).join('')+'</tbody></table></div>';
+};
+
+P.docs=function(){
+ var f=S.docSite;
+ var list=D.docs.filter(function(d){return f==='all'||d.site===f||d.site==='all'});
+ var coi = S.coi ? '<form class="card stack" id="coiForm" style="padding:22px" novalidate><div class="row sp"><h2 style="font-size:1.15rem">Request a certificate of insurance</h2><button type="button" class="link" data-act="coiClose">Cancel</button></div><p class="muted small">Tell us who the certificate is for. We send it here and by email.</p><div class="form-grid">'+inp('coi-holder','Certificate holder','coiHolder',S.coiHolder,'text','Name of the owner, managing agent or board',true)+'</div><label class="opt" style="max-width:420px"><input type="checkbox" id="coi-ai" checked><b>Name them as additional insured</b></label><div><button class="btn" type="submit">Request certificate</button></div></form>' : '';
+ return pHead('Documents','Drawings, reports, warranties and insurance', S.coi?'':'<button class="btn" data-act="coiOpen">Request a COI</button>')+coi+
+ '<div class="seg" role="group" aria-label="Filter by building"><button data-act="docSite" data-v="all" aria-pressed="'+(f==='all')+'">All buildings</button>'+D.sites.map(function(s){return '<button data-act="docSite" data-v="'+s.id+'" aria-pressed="'+(f===s.id)+'">'+esc(s.name.split(' ').slice(0,2).join(' '))+'</button>'}).join('')+'</div>'+
+ '<div class="tbl-wrap"><table><thead><tr><th>Document</th><th>Type</th><th>Building</th><th>Date</th><th></th></tr></thead><tbody>'+list.map(function(d){return '<tr><td><b>'+esc(d.name)+'</b></td><td><span class="pill mute">'+esc(d.kind)+'</span></td><td class="muted">'+(d.site==='all'?'All buildings':esc(site(d.site).name))+'</td><td class="num">'+(d.pending?'<span class="pill warn">Requested</span>':fmtD(d.date))+'</td><td class="r">'+(d.pending?'':'<button class="btn ghost sm" data-act="demoFile">Open</button>')+'</td></tr>'}).join('')+'</tbody></table></div>';
+};
+
+P.team=function(){
+ var iv=S.inv;
+ var form = S.invite ? '<form class="card stack" id="invForm" style="padding:22px" novalidate><div class="row sp"><h2 style="font-size:1.15rem">Invite a person</h2><button type="button" class="link" data-act="invClose">Cancel</button></div><div class="form-grid">'+inp('iv-name','Name','inv.name',iv.name)+inp('iv-email','Email','inv.email',iv.email,'email')+
+  '<div class="field"><label for="iv-role">Role</label><select id="iv-role" data-bind="inv.role">'+['Admin','Property manager','Superintendent','Billing','Board member, view only'].map(function(r){return '<option'+(iv.role===r?' selected':'')+'>'+r+'</option>'}).join('')+'</select></div>'+
+  '<div class="field"><label for="iv-scope">Buildings</label><select id="iv-scope" data-bind="inv.scope">'+['All buildings'].concat(D.sites.map(function(s){return s.name})).map(function(r){return '<option'+(iv.scope===r?' selected':'')+'>'+esc(r)+'</option>'}).join('')+'</select></div></div>'+
+  '<div class="tbl-wrap"><table><thead><tr><th>Role</th><th>Can do</th></tr></thead><tbody><tr><td>Superintendent</td><td class="muted">Open and follow requests for their buildings</td></tr><tr><td>Billing</td><td class="muted">See and pay invoices</td></tr><tr><td>Board member</td><td class="muted">View systems, reports and invoices</td></tr></tbody></table></div><div><button class="btn" type="submit">Send invite</button></div></form>' : '';
+ return pHead('Team','People who can use this account', S.invite?'':'<button class="btn" data-act="invOpen">Invite a person</button>')+form+
+ '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Buildings</th><th>Status</th></tr></thead><tbody>'+D.team.map(function(t){return '<tr><td><b>'+esc(t.name)+'</b><div class="small muted">'+esc(t.email)+'</div></td><td>'+esc(t.role)+'</td><td class="muted">'+esc(t.scope)+'</td><td>'+(t.status==='Active'?'<span class="pill ok">Active</span>':'<span class="pill info">Invited</span>')+'</td></tr>'}).join('')+'</tbody></table></div>';
+};
+
+/* ---------- router ---------- */
+var VIEWS={home:vHome,buildings:vBuildings,services:vServices,plans:vPlans,quote:vQuote,service:vService};
+var main=$('#main'),curHash=null,pendingSvc=null;
+function currentHash(){var h=(location.hash||'').replace('#','');return h||'home'}
+function render(scrollTop){
+ var h=currentHash();
+ stopCycle();
+ if(h.indexOf('portal')===0){
+  main.innerHTML = S.auth ? vPortal(h==='portal'?'overview':h.slice(7)) : vLogin();
+ } else {
+  main.innerHTML = (VIEWS[h]||vHome)();
+ }
+ if(h==='home'||!VIEWS[h]&&h.indexOf('portal')!==0){ setActive(S.active); startCycle(); }
+ $$('.nav a').forEach(function(a){ if(a.getAttribute('href')==='#'+h) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+ var lb=$('#loginBtn'); lb.textContent = S.auth ? 'Client portal' : 'Client login';
+ if(scrollTop){
+  if(pendingSvc){var el=document.getElementById('svc-'+pendingSvc);pendingSvc=null;if(el){el.scrollIntoView();return}}
+  window.scrollTo(0,0);
+ }
+}
+window.addEventListener('hashchange',function(){ closeMenu(); render(true); });
+function go(h){ if(currentHash()===h) render(true); else location.hash=h; }
+
+/* menu */
+var menuBtn=$('#menuBtn'),nav=$('#nav');
+function closeMenu(){nav.classList.remove('open');menuBtn.setAttribute('aria-expanded','false')}
+menuBtn.addEventListener('click',function(){var o=nav.classList.toggle('open');menuBtn.setAttribute('aria-expanded',String(o))});
+
+/* ---------- binding ---------- */
+function setPath(path,val){var p=path.split('.'),o=S;for(var i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=val}
+document.addEventListener('input',function(e){
+ var t=e.target;
+ if(t.dataset && t.dataset.bind){ setPath(t.dataset.bind,t.value); if(t.dataset.bind.indexOf('q.')===0){var qs=$('#qsum');if(qs)qs.innerHTML=qSummary()} if(t.dataset.bind==='orderSite'){} }
+ if(t.dataset && t.dataset.ad){ var a=t.dataset.ad.split(':'); var v=Math.max(0,parseInt(t.value,10)||0); site(a[0]).ad[a[1]]=v; }
+});
+document.addEventListener('change',function(e){
+ var t=e.target;
+ if(t.dataset && t.dataset.ad){ rerender(); return; }
+ var c=t.dataset && t.dataset.chg; if(!c) return;
+ if(c==='qType'){ S.q.type=t.value; if(TYPEM[t.value] && (!S.q.sys.length || S.q.sysAuto)){ S.q.sys=TYPEM[t.value].systems.slice(); S.q.sysAuto=true; } S.q.err=''; }
+ if(c==='qSys'){ S.q.sysAuto=false; var i=S.q.sys.indexOf(t.value); if(t.checked&&i<0)S.q.sys.push(t.value); if(!t.checked&&i>-1)S.q.sys.splice(i,1); S.q.err=''; }
+ if(c==='qProj'){ S.q.project=t.value; }
+ if(c==='qTime'){ S.q.time=t.value; }
+ if(c==='svIssue'){ S.sv.issue=t.value; }
+ if(c==='nrPri'){ S.nr.pri=t.value; var en=$('#nr-emerg'); if(en) en.hidden=t.value!=='Emergency'; return; }
+ var qs=$('#qsum'); if(qs) qs.innerHTML=qSummary();
+});
+function rerender(){
+ var y=window.scrollY,a=document.activeElement,sel=null;
+ if(a&&a.dataset&&a.dataset.act){sel='[data-act="'+a.dataset.act+'"]'+['id','v','site','d'].map(function(k){return a.dataset[k]!=null?'[data-'+k+'="'+a.dataset[k]+'"]':''}).join('')}
+ else if(a&&a.id){sel='#'+a.id}
+ render(false); window.scrollTo(0,y);
+ if(sel){var e=null;try{e=document.querySelector(sel)}catch(x){} if(e)e.focus({preventScroll:true})}
+}
+function focusStep(){var h=$('#qstep');if(h)h.focus({preventScroll:true})}
+
+/* ---------- forms ---------- */
+document.addEventListener('submit',function(e){
+ var f=e.target; e.preventDefault();
+ if(f.id==='loginForm'){ if(!/\S+@\S+/.test(S.login.email)){toast('Enter the email you use for EZTek.');return} var h=currentHash(); S.auth=true; if(h==='portal-requests')S.newReq=true; if(h==='portal-docs')S.coi=true; if(h==='portal')go('portal-overview'); else render(true); toast('Signed in as Dana Kim (demo)'); return; }
+ if(f.id==='svForm'){
+  var v=S.sv;
+  if(!v.issue){v.err='Pick what is not working.';rerender();return}
+  if(!v.name.trim()||!v.phone.trim()||!v.address.trim()){v.err='Add your name, phone and the address so a dispatcher can reach you.';rerender();return}
+  v.err='';v.done='EZ-S-'+rid();render(true);return;
+ }
+ if(f.id==='nrForm'){
+  if(!S.nr.title.trim()){S.nrErr='Add a short summary so dispatch knows what to bring.';rerender();return}
+  var r={id:'EZ-'+(2300+D.reqs.length),site:S.nr.site,sys:S.nr.sys,title:S.nr.title.trim(),pri:S.nr.pri,stage:0,created:'Today',eta:'',tech:'',notes:[S.nr.desc.trim(),S.nr.access.trim()?'Access: '+S.nr.access.trim():''].filter(Boolean)};
+  D.reqs.unshift(r);S.newReq=false;S.nrErr='';S.openReq=r.id;S.reqFilter='open';S.nr={site:'shore',sys:'security',pri:'Routine',title:'',desc:'',access:''};
+  rerender();toast('Request '+r.id+' sent to dispatch');return;
+ }
+ if(f.dataset && f.dataset.note){
+  var inpEl=f.querySelector('input');var txt=inpEl.value.trim();if(!txt)return;
+  D.reqs.forEach(function(r){if(r.id===f.dataset.note)r.notes.push('You: '+txt)});rerender();toast('Note added');return;
+ }
+ if(f.id==='coiForm'){
+  if(!S.coiHolder.trim()){toast('Add the certificate holder name.');return}
+  D.docs.unshift({name:'Certificate of insurance · '+S.coiHolder.trim(),site:'all',kind:'COI',date:'2026-10-31',pending:true});S.coi=false;S.coiHolder='';rerender();toast('Certificate requested');return;
+ }
+ if(f.id==='invForm'){
+  var iv=S.inv; if(!iv.name.trim()||!/\S+@\S+/.test(iv.email)){toast('Add a name and a valid email.');return}
+  D.team.push({name:iv.name.trim(),email:iv.email.trim(),role:iv.role,scope:iv.scope,status:'Invited'});S.invite=false;S.inv={name:'',email:'',role:'Superintendent',scope:'All buildings'};rerender();toast('Invite sent (demo)');return;
+ }
+});
+
+/* ---------- actions ---------- */
+var A={
+ riser:function(el){S.picked=true;stopCycle();setActive(el.dataset.v)},
+ goType:function(el){S.bType=el.dataset.id;go('buildings')},
+ bTab:function(el){S.bType=el.dataset.id;rerender()},
+ goSvc:function(el,e){e.preventDefault();pendingSvc=el.dataset.id;go('services')},
+ quoteFor:function(el){var t=TYPEM[el.dataset.id];S.q.type=t.id;S.q.sys=t.systems.slice();S.q.sysAuto=true;S.q.step=2;S.q.done=null;S.q.err='';go('quote')},
+ quoteSys:function(el){if(S.q.sys.indexOf(el.dataset.id)<0)S.q.sys.push(el.dataset.id);S.q.step=S.q.type?2:1;S.q.done=null;go('quote')},
+ quotePlan:function(el){S.q.plan=el.dataset.id;S.q.done=null;S.q.step=S.q.type?2:1;go('quote');toast(PLANS[el.dataset.id].name+' plan noted. Tell us about the building.')},
+ qBack:function(){S.q.step=Math.max(1,S.q.step-1);S.q.err='';render(true);focusStep()},
+ qNext:function(){
+  var q=S.q;
+  if(q.step===1&&!q.type){q.err='Pick a building type to continue.';rerender();return}
+  if(q.step===2&&!q.sys.length){q.err='Pick at least one system.';rerender();return}
+  if(q.step===3&&!q.project){q.err='Pick the kind of project.';rerender();return}
+  if(q.step===4){
+   if(!q.c.name.trim()){q.err='Add your name.';rerender();return}
+   if(!q.c.email.trim()&&!q.c.phone.trim()){q.err='Add an email or phone number so we can reach you.';rerender();return}
+   if(q.c.email.trim()&&!/\S+@\S+\.\S+/.test(q.c.email)){q.err='Check the email address.';rerender();return}
+   if(!q.c.address.trim()){q.err='Add the building address.';rerender();return}
+   q.err='';q.done={id:'EZ-Q-'+rid()};render(true);return;
+  }
+  q.err='';q.step++;render(true);focusStep();
+ },
+ qSlot:function(el){S.q.slot=S.q.slot===el.dataset.v?null:el.dataset.v;$$('.slotbtn').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===S.q.slot))});var qs=$('#qsum');if(qs)qs.innerHTML=qSummary()},
+ qReset:function(){S.q={step:1,type:null,sys:[],project:null,size:{units:'',floors:'',doors:'',cams:''},time:null,c:{name:'',company:'',role:'',email:'',phone:'',address:'',borough:''},slot:null,err:'',done:null};render(true)},
+ svReset:function(){S.sv={client:'no',sys:'',issue:'',desc:'',name:'',phone:'',email:'',address:'',borough:'',err:'',done:null};render(true)},
+ magic:function(){S.login.link=true;rerender()},
+ signOut:function(){S.auth=false;go('home');toast('Signed out')},
+ newReqGo:function(){S.newReq=true;S.nrErr='';if(currentHash()!=='portal-requests')go('portal-requests');else rerender()},
+ newReqSite:function(el){S.nr.site=el.dataset.id;S.newReq=true;go('portal-requests')},
+ newReqClose:function(){S.newReq=false;S.nrErr='';rerender()},
+ reqFilter:function(el){S.reqFilter=el.dataset.v;rerender()},
+ toggleReq:function(el){S.openReq=S.openReq===el.dataset.id?null:el.dataset.id;rerender()},
+ openReq:function(el){if(el.dataset.id){S.openReq=el.dataset.id;var r=D.reqs.filter(function(x){return x.id===el.dataset.id})[0];S.reqFilter=r&&r.stage===4?'all':'open'}},
+ siteTab:function(el){S.siteSel=el.dataset.id;rerender()},
+ planPick:function(el){var s=site(el.dataset.site);if(s.plan===el.dataset.v){S.planPick=null}else S.planPick={site:s.id,plan:el.dataset.v};rerender()},
+ planOk:function(){var s=site(S.planPick.site);s.plan=S.planPick.plan;S.planPick=null;rerender();toast(s.name+' moves to '+PLANS[s.plan].name+' on Dec 1')},
+ planCancel:function(){S.planPick=null;rerender()},
+ adStep:function(el){var s=site(el.dataset.site);s.ad[el.dataset.id]=Math.max(0,(s.ad[el.dataset.id]||0)+(+el.dataset.d));rerender()},
+ adToggle:function(el){var s=site(el.dataset.site);s.ad.after=!s.ad.after;rerender()},
+ cartStep:function(el){var id=el.dataset.id;S.cart[id]=Math.max(0,(S.cart[id]||0)+(+el.dataset.d));if(!S.cart[id])delete S.cart[id];rerender()},
+ cartSet:function(el){var id=el.dataset.id;if(+el.dataset.v)S.cart[id]=1;else delete S.cart[id];rerender()},
+ checkout:function(){
+  var names=[],total=0,quote=false;
+  for(var k in S.cart){var c=CATM[k];if(c.quote){quote=true;names.push(c.name+' (quote)')}else{total+=c.price*S.cart[k];names.push(S.cart[k]+' × '+c.name)}}
+  var r={id:'EZ-'+(2300+D.reqs.length),site:S.orderSite,sys:CATM[Object.keys(S.cart)[0]].sys,title:'Order: '+names.join(', '),pri:'Routine',stage:0,created:'Today',eta:'',tech:'',notes:[]};
+  D.reqs.unshift(r);
+  S.orderDone={id:'EZ-O-'+rid(),lines:names.join(', '),site:S.orderSite,total:total,quote:quote,req:r.id};S.cart={};rerender();
+ },
+ orderAgain:function(){S.orderDone=null;rerender()},
+ pay:function(el){S.payConfirm=el.dataset.id;rerender()},
+ payOk:function(el){D.inv.forEach(function(i){if(i.id===el.dataset.id)i.status='paid'});S.payConfirm=null;rerender();toast('Payment recorded (demo)')},
+ payCancel:function(){S.payConfirm=null;rerender()},
+ autopay:function(){S.autopay=!S.autopay;rerender()},
+ docSite:function(el){S.docSite=el.dataset.v;rerender()},
+ coiOpen:function(){S.coi=true;rerender()},
+ coiClose:function(){S.coi=false;rerender()},
+ invOpen:function(){S.invite=true;rerender()},
+ invClose:function(){S.invite=false;rerender()},
+ demoFile:function(){toast('Demo: files open here in the live portal')}
+};
+document.addEventListener('click',function(e){
+ var el=e.target.closest('[data-act]'); if(!el) return;
+ var f=A[el.dataset.act]; if(f) f(el,e);
+});
+
+render(false);
+})();
+</script>
