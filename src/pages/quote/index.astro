@@ -299,9 +299,9 @@ const data = {
       building: D.types[radio('type')]?.name ?? '', systems: systems().map((s) => D.sys[s]).join(', '),
       project: D.projects[radio('project')] ?? '', timing: D.times[radio('time')] ?? '',
       size: ['units', 'floors', 'doors', 'cams'].map((k) => `${k}: ${val(k) || '-'}`).join(', '),
-      care_plan: plan ? D.plans[plan] : '', survey_window: slot, estimate_shown: e2 ? `${money(e2[0])}-${money(e2[1])}` : '',
+      care_plan: plan ? D.plans[plan] : '', survey_window: slot, estimate: e2 ? `${money(e2[0])}-${money(e2[1])}` : '',
     };
-    const r = await sendLead('Quote', 'Q', fields, val('website'));
+    const r = await sendLead('quote', 'Quote', 'Q', fields, val('website'));
     next.disabled = false; next.textContent = 'Send request';
     if (!r.ok) { err.textContent = 'Could not send. Please call us or try again.'; return; }
     try { localStorage.removeItem(KEY); } catch { /* ignore */ }

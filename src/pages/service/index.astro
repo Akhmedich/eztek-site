@@ -97,8 +97,8 @@ const URGENCY = [
     const btn = root.querySelector<HTMLButtonElement>('[data-send]')!;
     btn.disabled = true; btn.textContent = 'Sending…';
     const fields: Record<string, string> = {};
-    ['urgency', 'system', 'client', 'description', 'name', 'phone', 'email', 'borough', 'address', 'access'].forEach((k) => (fields[k] = k === 'urgency' ? urgency() : val(k)));
-    const r = await sendLead(urgency() === 'emergency' ? 'EMERGENCY service' : 'Service', 'S', fields, val('website'));
+    ['urgency', 'systems', 'client', 'message', 'name', 'phone', 'email', 'borough', 'address', 'access'].forEach((k) => (fields[k] = k === 'urgency' ? urgency() : val(k === 'systems' ? 'system' : k === 'message' ? 'description' : k)));
+    const r = await sendLead('service', urgency() === 'emergency' ? 'EMERGENCY service' : 'Service', 'S', fields, val('website'));
     btn.disabled = false; btn.textContent = 'Send request';
     if (!r.ok) { err.textContent = 'Could not send. Please call us.'; return; }
     form.hidden = true;

@@ -40,7 +40,7 @@ const id = `f-${prefix.toLowerCase()}`;
       btn.disabled = true;
       const fields: Record<string, string> = {};
       ['name', 'company', 'email', 'phone', 'topic', 'message'].forEach((k) => (fields[k] = val(k)));
-      const r = await sendLead(box.dataset.simple!, box.dataset.prefix!, fields, val('website'));
+      const r = await sendLead(box.dataset.simple!.toLowerCase(), box.dataset.simple!, box.dataset.prefix!, fields, val('website'));
       btn.disabled = false;
       if (!r.ok) { err.textContent = 'Could not send. Please call or email us.'; return; }
       form.hidden = true;
