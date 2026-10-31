@@ -1,0 +1,48 @@
+/* Signed-in apps: staff dashboard (/admin/) and client portal (/portal/) */
+.ops-top{display:flex;align-items:center;gap:16px;min-height:60px;border-bottom:1px solid var(--line);background:var(--surface)}
+.ops-top .wrap{display:flex;align-items:center;gap:16px;width:100%}
+.ops-tag{font:600 11px var(--f-mono);letter-spacing:.1em;color:var(--fiber-ink);border:1px solid var(--fiber);padding:4px 7px;border-radius:2px}
+.ops-user{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink2)}
+.ops{padding-block:20px 60px;display:grid;gap:18px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpis .card{padding:12px 14px;display:grid;gap:4px}
+.kpis .k{font:500 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
+.kpis .v{font:800 1.6rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.kpis .alert{border-color:var(--bad)} .kpis .alert .v{color:var(--bad)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button,.chipf button{font:600 14px var(--f-body);padding:8px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink2);cursor:pointer}
+.tabs button[aria-selected="true"],.chipf button[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -3px 0 var(--fiber)}
+.chipf{display:flex;gap:6px;flex-wrap:wrap}
+.chipf button{font-size:13px;padding:6px 10px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+@media (max-width:980px){.cols{grid-template-columns:minmax(0,1fr)}}
+.rows{display:grid;border:1px solid var(--line);border-radius:4px;background:var(--surface);overflow:hidden}
+.rows button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 14px;border-bottom:1px solid var(--line2);cursor:pointer}
+.rows button:last-child{border-bottom:0}
+.rows button:hover,.rows button[aria-current="true"]{background:var(--sunk)}
+.rows button[aria-current="true"]{box-shadow:inset 3px 0 0 var(--fiber)}
+.rows .t{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rows .m{grid-column:1/-1;font-size:13px;color:var(--ink2);display:flex;gap:6px 10px;flex-wrap:wrap}
+.detail{position:sticky;top:12px;display:grid;gap:14px}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 12px;font-size:14px}
+.kv dt{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding-top:3px}
+.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.note-list{display:grid;gap:8px}
+.note-item{border-left:3px solid var(--line);padding:4px 0 4px 10px;font-size:14px}
+.note-item.cv{border-color:var(--fiber)}
+.note-item small{display:block;color:var(--ink3);font:500 11px var(--f-mono)}
+.pill.bad{background:var(--bad-wash);color:var(--bad)}
+.empty{padding:28px;text-align:center;color:var(--ink3)}
+.inline{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.inline .field{flex:1 1 160px}
+.timeline{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.timeline li{font-size:12px;color:var(--ink3);display:grid;gap:5px}
+.timeline li::before{content:"";height:4px;border-radius:2px;background:var(--line)}
+.timeline li.f{color:var(--ink)}
+.timeline li.f::before{background:var(--fiber)}
+@media (max-width:520px){.timeline{grid-template-columns:minmax(0,1fr)}.timeline li{grid-template-columns:12px minmax(0,1fr);align-items:center}.timeline li::before{height:12px;width:4px}}
+.app-nav{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);padding-bottom:0}
+.app-nav a{flex-shrink:0;padding:10px 12px;color:var(--ink2);text-decoration:none;font-weight:600;font-size:14.5px;border-bottom:3px solid transparent}
+.app-nav a[aria-current="page"]{color:var(--ink);border-color:var(--fiber)}

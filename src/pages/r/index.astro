@@ -1,0 +1,83 @@
+---
+// Page behind the QR sticker on every installed system: /r/?q=<sticker id>.
+// Anyone in the building can report a problem; the lead arrives linked to the system.
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import { company } from '../../data/company';
+import { tel } from '../../lib/url';
+---
+<Layout title="Report a problem" description="Report a problem with a system EZTek installed in your building.">
+  <section class="band" style="padding-top:clamp(24px,4vw,44px)"><div class="wrap" style="max-width:640px">
+    <div class="card stack" style="padding:clamp(18px,3vw,28px)" id="qr">
+      <p class="eyebrow">Report a problem</p>
+      <h1 style="font-size:clamp(1.6rem,3.4vw,2.2rem)" data-label>Something not working?</h1>
+      <p class="muted small" data-sub>Tell us what happened. The EZTek team gets it with the exact device and building.</p>
+      <form class="stack" novalidate data-form>
+        <fieldset><legend class="lbl-t" style="margin-bottom:8px">Is the building secure?</legend>
+          <div class="opts c2">
+            <label class="opt"><input type="radio" name="urgency" value="emergency"><b>No</b><span>A door will not lock, or entry is down</span></label>
+            <label class="opt"><input type="radio" name="urgency" value="routine" checked><b>Yes</b><span>It can wait for a scheduled visit</span></label>
+          </div>
+        </fieldset>
+        <p class="note" data-emerg hidden><Icon name="phone" /><span><b>Please also call <a href={tel}>{company.phoneDisplay}</a>.</b> A call reaches the dispatcher right away.</span></p>
+        <div class="field"><label for="r-msg">What is happening?</label><textarea id="r-msg" name="message" placeholder="The screen is black since this morning"></textarea></div>
+        <div class="form-grid">
+          <div class="field"><label for="r-name">Your name</label><input id="r-name" name="name" type="text" autocomplete="name"></div>
+          <div class="field"><label for="r-phone">Phone</label><input id="r-phone" name="phone" type="tel" autocomplete="tel"></div>
+          <div class="field full"><label for="r-unit">Apartment or role <span class="muted">(optional)</span></label><input id="r-unit" name="unit" type="text" placeholder="Apt 4B, super, front desk"></div>
+        </div>
+        <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <p class="err" role="alert" data-err></p>
+        <button class="btn lg" type="submit">Send report</button>
+      </form>
+      <div class="stack" data-done hidden tabindex="-1">
+        <h2 style="font-size:1.4rem">Thanks, we have it.</h2>
+        <p>Reference <span class="ticket-id" data-ref></span></p>
+        <p class="muted">The building manager and EZTek see this report. We call you if we need more details.</p>
+        <p class="note" data-preview hidden><span class="draft">Preview</span><span>This preview does not send reports yet.</span></p>
+      </div>
+    </div>
+  </div></section>
+</Layout>
+
+<script>
+  import { sendLead } from '../../scripts/lead';
+  import { sb } from '../../lib/supabase';
+
+  const box = document.getElementById('qr')!;
+  const form = box.querySelector<HTMLFormElement>('[data-form]')!;
+  const err = box.querySelector<HTMLElement>('[data-err]')!;
+  const q = new URLSearchParams(location.search).get('q') || '';
+  const valid = /^[0-9a-f-]{36}$/i.test(q);
+  let label = '';
+
+  if (sb && valid) {
+    sb.rpc('qr_label', { p_qr: q }).then(({ data }) => {
+      if (!data) return;
+      label = String(data);
+      box.querySelector('[data-label]')!.textContent = `Problem with ${label.split(' · ')[0]}?`;
+      box.querySelector('[data-sub]')!.textContent = label.split(' · ').slice(1).join(' · ') + '. Tell us what happened; we get it with the exact device.';
+    });
+  }
+
+  const val = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement)?.value ?? '').trim();
+  const urgency = () => form.querySelector<HTMLInputElement>('input[name="urgency"]:checked')?.value ?? 'routine';
+  form.addEventListener('change', () => { box.querySelector<HTMLElement>('[data-emerg]')!.hidden = urgency() !== 'emergency'; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const m = !val('message') ? 'Describe what is happening.' : !val('name') ? 'Add your name.' : val('phone').replace(/\D/g, '').length < 10 ? 'Add a phone number so we can reach you.' : '';
+    if (m) { err.textContent = m; return; }
+    const btn = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    btn.disabled = true;
+    const fields = { urgency: urgency(), message: val('message'), name: val('name'), phone: val('phone'), unit: val('unit'), device: label || 'unknown sticker' };
+    const r = await sendLead('service', urgency() === 'emergency' ? 'EMERGENCY QR report' : 'QR report', 'R', fields, val('website'), valid ? { qr: q } : {});
+    btn.disabled = false;
+    if (!r.ok) { err.textContent = 'Could not send. Please call us.'; return; }
+    form.hidden = true;
+    const done = box.querySelector<HTMLElement>('[data-done]')!;
+    done.hidden = false;
+    box.querySelector('[data-ref]')!.textContent = r.id;
+    box.querySelector<HTMLElement>('[data-preview]')!.hidden = !r.preview;
+    done.focus();
+  });
+</script>

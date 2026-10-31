@@ -7,13 +7,18 @@
     "build": "astro build",
     "preview": "astro preview",
     "check:launch": "node scripts/check-launch.mjs",
-    "test:db": "node scripts/test-db.mjs"
+    "test:db": "node scripts/test-db.mjs",
+    "check": "astro check"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
-    "astro": "5.18.2"
+    "astro": "5.18.2",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.10"
+    "@astrojs/check": "0.9.10",
+    "@electric-sql/pglite": "0.5.10",
+    "@types/qrcode": "1.5.5",
+    "typescript": "5.9.3"
   }
 }

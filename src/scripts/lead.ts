@@ -33,16 +33,16 @@ export function refId(prefix: string) {
 // Form fields that have their own column in `leads`; anything else goes into message
 const COLUMNS = ['urgency', 'name', 'company', 'role', 'email', 'phone', 'address', 'borough', 'building', 'systems', 'project', 'timing', 'size', 'care_plan', 'survey_window', 'estimate'];
 
-function toRow(kind: string, id: string, fields: Record<string, string>) {
-  const row: Record<string, unknown> = { ref: id, kind, source: { ...source(), page: location.pathname } };
-  const extra: string[] = [];
+function toRow(kind: string, id: string, fields: Record<string, string>, extra: Record<string, string> = {}) {
+  const row: Record<string, unknown> = { ref: id, kind, source: { ...source(), page: location.pathname, ...extra } };
+  const lines: string[] = [];
   for (const [k, v] of Object.entries(fields)) {
     if (!v) continue;
     if (COLUMNS.includes(k)) row[k] = v.slice(0, 500);
-    else if (k === 'message') extra.unshift(v);
-    else extra.push(`${k.replace(/_/g, ' ')}: ${v}`);
+    else if (k === 'message') lines.unshift(v);
+    else lines.push(`${k.replace(/_/g, ' ')}: ${v}`);
   }
-  if (extra.length) row.message = extra.join('\n').slice(0, 5000);
+  if (lines.length) row.message = lines.join('\n').slice(0, 5000);
   return row;
 }
 
@@ -74,15 +74,16 @@ async function toMail(label: string, id: string, fields: Record<string, string>)
 
 export type LeadResult = { ok: boolean; id: string; preview: boolean; error?: string };
 
-// kind: quote | service | contact | partner; label goes into the email subject
-export async function sendLead(kind: string, label: string, prefix: string, fields: Record<string, string>, honeypot = ''): Promise<LeadResult> {
+// kind: quote | service | contact | partner; label goes into the email subject;
+// extra is added to the lead's source (for example the QR sticker id)
+export async function sendLead(kind: string, label: string, prefix: string, fields: Record<string, string>, honeypot = '', extra: Record<string, string> = {}): Promise<LeadResult> {
   const id = refId(prefix);
   if (honeypot) return { ok: true, id, preview: false }; // bots get a quiet success
   const jobs: Promise<void>[] = [];
-  if (SB_URL && SB_KEY) jobs.push(toDb(toRow(kind, id, fields)));
+  if (SB_URL && SB_KEY) jobs.push(toDb(toRow(kind, id, fields, extra)));
   if (MAIL_URL) jobs.push(toMail(label, id, fields));
   if (!jobs.length) {
-    console.info('[preview] lead not sent', toRow(kind, id, fields));
+    console.info('[preview] lead not sent', toRow(kind, id, fields, extra));
     return { ok: true, id, preview: true };
   }
   // one working channel is enough: the lead is not lost

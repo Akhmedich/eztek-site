@@ -21,9 +21,26 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `staff` | Who can use the dashboard. |
 | `org_members` | Client users and their organization. |
 | `ops_today` (view) | One-row summary: new leads, emergencies, leads waiting over an hour, unscheduled jobs, systems down. |
-| `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. |
+| `invoices` | Invoices mirrored from Stripe; clients pay on the Stripe page. |
+| `portal_summary` (view) | Per client: open requests, systems needing attention, next visit, balance due. |
+| `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. A lead from a QR sticker goes straight to that client's building and system. |
+| `qr_label(qr)` | Name of the system behind a sticker, for the public report page. |
 
-Access rules (tested by `npm run test:db`): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs and client-visible notes, and can open service requests.
+## Pages
+- `/admin/` staff: leads, jobs, clients; add systems to a building, invite client users, open QR report pages.
+- `/admin/stickers/?site=…` printable QR stickers (2 x 2 in) for every system in a building.
+- `/portal/` clients: overview, requests with progress and messages, buildings and systems, care plans and invoices.
+- `/r/?q=…` the page behind a sticker: anyone in the building reports a problem; it arrives linked to the system.
+
+## Server functions (`supabase/functions/`)
+| Function | What |
+|---|---|
+| `billing-checkout` | Starts a care plan subscription for a building on Stripe Checkout; if one exists, opens the Stripe billing portal. |
+| `billing-portal` | Stripe billing portal: cards, ACH bank accounts, autopay, invoices, cancel. |
+| `stripe-webhook` | Updates plan status per building and the invoice list from Stripe events. |
+| `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
+
+Access rules (tested by `npm run test:db`, 33 cases): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
@@ -37,8 +54,19 @@ Claude cannot create accounts or handle keys, so these steps are yours.
 
 Re-run the deploy (Actions > Build and deploy > Run workflow) after changing variables.
 
+## Online payments (owner, about 20 minutes)
+1. **Stripe account** for EZTek at stripe.com (business details, bank account for payouts). Turn on cards and ACH Direct Debit (Settings > Payment methods).
+2. **Products.** Create two monthly prices: Care plan Essential and Care plan Priority (amounts from `src/data/plans.ts` once the real prices are set). Managed stays a custom subscription that staff create in Stripe for each building.
+3. **Billing portal.** Settings > Billing > Customer portal: allow updating payment methods, viewing invoices, switching between the two prices, and canceling at period end.
+4. **Functions.** Ask Claude to deploy `billing-checkout`, `billing-portal`, `stripe-webhook` and `invite-member` through the `eztek-ops` connector, or run `npx supabase functions deploy` yourself.
+5. **Webhook.** Stripe > Developers > Webhooks > add endpoint `https://<project ref>.supabase.co/functions/v1/stripe-webhook` with the events listed at the top of `supabase/functions/stripe-webhook/index.ts`.
+6. **Secrets** (you enter them; Claude never handles keys). In Supabase: Edge Functions > Secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ESSENTIAL`, `STRIPE_PRICE_PRIORITY`, `PORTAL_URL` = `https://akhmedich.github.io/eztek-site/portal/`.
+7. **Test first.** Do all of the above in Stripe test mode, pay with Stripe's test card, check the plan turns active in `/admin/` and the invoice shows in the portal. Then repeat with live keys.
+
+Until this is done, the portal's billing buttons say online billing is not set up and ask the client to call.
+
 ## Later
-- Client portal on the same database: sign-in, buildings, requests, documents, Stripe billing for care plans.
+- Documents in the portal (as-builts, reports, COI) on Supabase Storage.
 - Daily 8 AM summary from Claude to Mansur: new leads, emergencies, today's jobs.
-- QR stickers that open a service request for the exact system.
 - Own email sender for sign-in links (Supabase's built-in sender is limited to a few emails per hour).
+- Text message updates to clients when a job is scheduled or completed.

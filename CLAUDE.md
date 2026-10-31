@@ -7,7 +7,7 @@
 - Never present sample projects, quotes, ratings or license numbers as real outside the preview.
 - DNS for eztekav.com: never touch MX or TXT. Cutover only `A @` and `CNAME www`, with owner approval.
 - Orders, jobs and clients live in EZTek Ops (Supabase), decided by the owner's delegation 2026-10-31. Setup and schema: `docs/ops.md`. Schema changes go in a new file in `supabase/migrations/` and must pass `npm run test:db`.
-- Next planned step: client portal on the same database, Stripe billing for care plans.
+- Client portal, Stripe billing and QR stickers are built; going live needs the owner's Stripe setup (`docs/ops.md`). Functions type-check with `npx deno check --node-modules-dir=none` in `supabase/functions/`.
 
 ## Running operations through the `eztek-ops` MCP server
 The database is live business data. Read freely; change carefully.
@@ -17,5 +17,6 @@ The database is live business data. Read freely; change carefully.
 - Creating work: `select public.convert_lead('<lead id>', 'survey')` (or `'service'` for repairs). It creates the client, the building and job `EZ-####`, and moves the lead to `survey`.
 - Scheduling: update `jobs.scheduled_start`, `scheduled_end`, `tech_id`, `stage`. Times are America/New_York.
 - Reports: leads by `source->>'utm_source'` and `source->>'referrer'`, conversion new > won, open jobs by stage, systems with `status = 'bad'`.
+- Invoices and plan status come from Stripe through `stripe-webhook`; do not edit them by hand.
 - Never delete rows, never update more than one row at a time without the user confirming the list, never change `staff` or `org_members` without an explicit request.
 - Schema changes: write a migration file, run `npm run test:db`, then apply it with the MCP `apply_migration` tool only after the user says yes.

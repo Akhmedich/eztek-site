@@ -6,7 +6,7 @@ Website and client portal for EZTek Solutions, a low-voltage systems integrator 
 - Phase 1, clickable prototype: kept at `/prototype/` (`public/prototype/index.html`), including the demo client portal.
 - Phase 2, step 1, marketing site and lead funnel: Astro static site, 34 pages. Preview at https://akhmedich.github.io/eztek-site/ after the deploy workflow runs on `main`.
 - Phase 2, step 2, EZTek Ops (orders, jobs, clients) on Supabase: database schema with access rules, website forms write leads to it, staff dashboard at `/admin/`, Claude connected through the Supabase MCP server. Waiting for the one-time setup in `docs/ops.md`.
-- Phase 2, step 3, client portal on the same database with Stripe billing: not started.
+- Phase 2, step 3, client portal on the same database: requests, buildings, care plans and invoices with Stripe; QR stickers on every system. Waiting for the Stripe setup in `docs/ops.md`.
 
 ## Run locally
 ```bash
@@ -15,13 +15,16 @@ npm run dev        # http://localhost:4321/eztek-site/
 npm run build      # static site in dist/
 npm run check:launch
 npm run test:db     # database access rules, in-memory Postgres
+npm run check       # type check
 ```
 
 ## Structure
 - `src/data/` - all business content: `company.ts` (facts, contacts, hours, credentials), `services.ts`, `buildings.ts`, `areas.ts`, `plans.ts` (care plans, add-ons, quote estimate ranges), `proof.ts` (projects, quotes).
 - `src/pages/` - home, 9 service pages, 6 building-type pages, 5 borough pages, care plans, quote wizard, service request, about, contact, partners, portal sign-in, privacy, terms, 404, sitemap.xml, robots.txt.
 - `src/scripts/lead.ts` - sends form leads; records the first-touch source (UTM, referrer, landing page) with each lead.
-- `src/pages/admin/` - staff dashboard: leads, jobs, clients.
+- `src/pages/admin/` - staff dashboard: leads, jobs, clients, QR sticker printing.
+- `src/pages/portal/` - client portal; `src/pages/r/` - page behind the QR stickers.
+- `supabase/functions/` - Stripe checkout, billing portal and webhook; client invitations.
 - `supabase/migrations/` - database schema; `scripts/test-db.mjs` tests it.
 - `.mcp.json` - connects Claude Code to the database (`eztek-ops`).
 - `public/prototype/` - the Phase 1 prototype.

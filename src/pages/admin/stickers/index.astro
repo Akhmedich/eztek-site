@@ -1,0 +1,49 @@
+---
+// Printable QR stickers for every system in one building: /admin/stickers/?site=<id>
+// Staff only (data loads through the staff session). Sized for 2 x 2 inch labels.
+import '../../../styles/global.css';
+import { company } from '../../../data/company';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>QR stickers</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <style>
+    :root{color-scheme:light}
+    body{background:#fff;color:#0E1D24}
+    .bar{display:flex;gap:12px;align-items:center;padding:16px;border-bottom:1px solid #C9D4D4}
+    .sheet{display:flex;flex-wrap:wrap;gap:12px;padding:16px}
+    .stk{width:2in;height:2in;border:1px dashed #9FB0B4;border-radius:6px;padding:.08in;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;text-align:center;break-inside:avoid}
+    .stk b{font:800 9pt/1.1 "Archivo",sans-serif;letter-spacing:.04em}
+    .stk svg{width:1.25in;height:1.25in}
+    .stk small{font:500 6.5pt/1.2 "JetBrains Mono",monospace}
+    @media print{.bar{display:none}.sheet{padding:0}.stk{border-color:#ddd}}
+  </style>
+</head>
+<body>
+  <div class="bar"><b id="title">QR stickers</b><button class="btn sm" onclick="print()">Print</button><span class="small muted">Scan opens a report form linked to the exact system.</span></div>
+  <div class="sheet" id="sheet" data-phone={company.phoneDisplay}><p class="muted">Loading…</p></div>
+  <script>
+    import QRCode from 'qrcode';
+    import { sb, esc } from '../../../lib/supabase';
+    const sheet = document.getElementById('sheet')!;
+    const site = new URLSearchParams(location.search).get('site');
+    (async () => {
+      if (!sb || !site) { sheet.innerHTML = '<p>Open this page from the dashboard.</p>'; return; }
+      const { data: s, error } = await sb.from('sites').select('name, systems(name, qr)').eq('id', site).single();
+      if (error || !s) { sheet.innerHTML = '<p>Sign in to the dashboard first, then open this page again.</p>'; return; }
+      document.getElementById('title')!.textContent = `QR stickers · ${s.name}`;
+      const base = location.origin + location.pathname.replace(/admin\/stickers\/?$/, '');
+      const cards = await Promise.all((s.systems || []).map(async (x: { name: string; qr: string }) => {
+        const svg = await QRCode.toString(`${base}r/?q=${x.qr}`, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+        return `<div class="stk"><b>EZTEK · SERVICE</b>${svg}<small>${esc(x.name)}<br>Scan to report a problem<br>${esc(sheet.dataset.phone)}</small></div>`;
+      }));
+      sheet.innerHTML = cards.join('') || '<p>No systems in this building yet.</p>';
+    })();
+  </script>
+</body>
+</html>
