@@ -50,7 +50,7 @@ function toRow(kind: string, id: string, fields: Record<string, string>, extra: 
 async function toDb(row: Record<string, unknown>) {
   const r = await fetch(`${SB_URL}/rest/v1/leads`, {
     method: 'POST',
-    headers: { apikey: SB_KEY!, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    headers: { apikey: SB_KEY!, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
     body: JSON.stringify(row),
   });
   if (!r.ok) throw new Error(`db ${r.status}`);
