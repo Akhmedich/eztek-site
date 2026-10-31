@@ -40,16 +40,20 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `stripe-webhook` | Updates plan status per building and the invoice list from Stripe events. |
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
 
-Access rules (tested by `npm run test:db`, 33 cases): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems.
+Access rules (tested by `npm run test:db`, 39 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
 
-1. **Supabase project.** Go to supabase.com, sign in with GitHub, create a project named `eztek-ops` in region East US. Save the database password in your password manager.
+1. **Supabase project.** Go to supabase.com, sign in with GitHub, organization `Eztek` (type Company, plan Free), project `eztek-ops`, region Americas (East US). Save the database password in your password manager. Security settings:
+   - Enable Data API: **on** (the site, dashboard and portal use it).
+   - Automatically expose new tables: **off**. Access is granted table by table in `supabase/migrations/20261031190000_explicit_grants.sql`; nothing else is reachable.
+   - Enable automatic RLS: **on** (a safety net; every table already has row level security).
+   - Connect GitHub: skip for now. Migrations are applied by Claude through the connector after review.
 2. **Connect Claude.** In a Claude Code session in this folder, set the project ref (the id in the project URL) as the environment variable `SUPABASE_PROJECT_REF`, then run `/mcp` and sign in to Supabase for the `eztek-ops` server. Claude can then apply the database schema from `supabase/migrations/` itself.
 3. **Sign-in links.** In Supabase: Authentication > URL Configuration. Site URL `https://akhmedich.github.io/eztek-site/`, redirect URLs `https://akhmedich.github.io/eztek-site/admin/` and `https://akhmedich.github.io/eztek-site/portal/` (later the same on eztekav.com).
 4. **Website connection.** In GitHub: repository Settings > Secrets and variables > Actions > Variables. Add `PUBLIC_SUPABASE_URL` (Project Settings > API > URL) and `PUBLIC_SUPABASE_ANON_KEY` (the `anon` public key; it is meant to be public and can only add leads).
-5. **Email copies of leads to mansur@eztek.us.** On web3forms.com enter `mansur@eztek.us` to get an access key by email. Add the variables `PUBLIC_FORM_ENDPOINT` = `https://api.web3forms.com/submit` and `PUBLIC_FORM_KEY` = that key.
+5. **Email copies of leads to mansur@eztek.us.** On web3forms.com click Create your Form, and give `mansur@eztek.us` as the email that receives submissions (sign up with that address if asked, so the account belongs to the company). The access key comes by email and is shown in the Web3Forms dashboard. Add the variables `PUBLIC_FORM_ENDPOINT` = `https://api.web3forms.com/submit` and `PUBLIC_FORM_KEY` = that key.
 6. **Staff.** Mansur opens `/admin/` and signs in with the email link once. Then ask Claude: "add Mansur to staff as admin".
 
 Re-run the deploy (Actions > Build and deploy > Run workflow) after changing variables.
