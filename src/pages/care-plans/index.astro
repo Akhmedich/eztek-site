@@ -4,11 +4,11 @@ import PageHero from '../../components/PageHero.astro';
 import PlanCards from '../../components/PlanCards.astro';
 import Faqs from '../../components/Faqs.astro';
 import CtaBand from '../../components/CtaBand.astro';
-import { PLAN_ROWS, ADDONS } from '../../data/plans';
+import { PLAN_ROWS, ADDONS, SERVICE_CALL } from '../../data/plans';
 import { money } from '../../lib/url';
 
 const faqs = [
-  { q: 'Do I need a plan to get service?', a: 'No. Anyone can book a one-time service call. Plan clients get faster dispatch, lower labor rates and scheduled maintenance.' },
+  { q: 'Do I need a plan to get service?', a: `No. Anyone can book a one-time service call: ${money(SERVICE_CALL.firstHour)} for the first hour on site, then ${money(SERVICE_CALL.hourly)} an hour, parts extra. Plan clients get faster dispatch, lower labor rates and scheduled maintenance.` },
   { q: 'Will you service a system another company installed?', a: 'Yes, after a takeover inspection where we document what is there, test it and list what needs attention before it goes on a plan.' },
   { q: 'Who in my company can use the portal?', a: 'You add your own users. Give a super permission to open requests, a bookkeeper access to invoices, and a board member a read-only view.' },
   { q: 'How do I pay?', a: 'By card or ACH bank transfer in the portal, with autopay if you want it. Invoices for several buildings can be combined into one.' },

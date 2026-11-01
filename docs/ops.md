@@ -43,6 +43,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `billing-portal` | Stripe billing portal: cards, ACH bank accounts, autopay, invoices, cancel. |
 | `stripe-webhook` | Updates plan status per building and the invoice list from Stripe events. |
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
+| `distance` | Road miles from the office to a building (US Census geocoder, no key), for the travel charge on quotes, service requests and proposals. Deployed without JWT check; it accepts only the site's own addresses. |
 | `proposal-checkout` | Stripe Checkout for the deposit on an accepted proposal; Stripe issues the invoice, so it shows in the portal. Deployed without JWT check: the proposal's secret link is the authorization. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
