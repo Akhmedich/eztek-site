@@ -298,6 +298,48 @@ const fromPermit = (await one('select public.prospect_to_lead($1) as id', [permi
 const pl = await one('select name, building, source from public.leads where id = $1', [fromPermit]);
 ok(pl.name === 'Summit Property Management' && pl.building === '141 units' && pl.source.permit === 'B01429125-I1', 'staff turn a permit into a lead in one step');
 await rejects(db.query('select public.prospect_to_lead($1)', [permit.id]), 'a prospect becomes a lead once');
+await as('service_role');
+const intercom = await one(`insert into public.prospects (source, source_id, filed_on, job_type, address, borough, owner_business, agent, violations, description) values ('nyc-hpd', '345678', '2026-10-20', 'HPD intercom violation', '2101 86 STREET', 'Brooklyn', 'Bay Ridge Gardens LLC', 'Anna Petrova', 3, 'Class B. Repair the broken or defective intercom system. Apartments: 2A, 4C.') returning id`);
+await db.query(`insert into public.prospects (source, source_id, violations) values ('nyc-hpd', '345678', 4) on conflict (source, source_id) do update set violations = excluded.violations`);
+const hp = await one(`select count(*)::int as n, max(violations) as v, max(status) as s from public.prospects where source = 'nyc-hpd'`);
+ok(hp.n === 1 && hp.v === 4 && hp.s === 'new', 'a building with intercom violations is stored once and its count refreshes');
+await rejects(db.query(`insert into public.prospects (source, source_id, violations) values ('nyc-hpd', 'x', -1)`), 'violation counts are not negative');
+await as('authenticated', STAFF);
+const fromHpd = (await one('select public.prospect_to_lead($1) as id', [intercom.id])).id;
+const hl = await one('select kind, name, building, systems, message, source from public.leads where id = $1', [fromHpd]);
+ok(hl.kind === 'service' && hl.name === 'Bay Ridge Gardens LLC' && hl.building === '4 open HPD intercom violations' && hl.systems === 'intercom-entry'
+  && hl.message.startsWith('Managing agent: Anna Petrova') && hl.source.hpd_building === '345678' && hl.source.channel === 'nyc-hpd' && !('permit' in hl.source),
+  'staff turn a building with intercom violations into a service lead');
+ok((await one('select source from public.leads where id = $1', [fromPermit])).source.permit === 'B01429125-I1', 'permit leads keep their permit number');
+
+// intercom violations grouped by managing agent, and one portfolio lead per manager
+await as('service_role');
+await db.query(`insert into public.prospects (source, source_id, address, borough, owner_business, agent, violations, filed_on) values
+  ('nyc-hpd', 'h1', '600 CONCORD AVENUE', 'Bronx', 'Concord Ave Assoc LP', 'WAVECREST MGMT GROUP', 7, '2026-10-29'),
+  ('nyc-hpd', 'h2', '270 EAST BURNSIDE AVENUE', 'Bronx', 'East Burnside Ave Assoc LP', 'KNICKERBOCKER C/O WAVECREST MANAGEMENT GROUP', 7, '2026-10-13'),
+  ('nyc-hpd', 'h3', '10 MAIN STREET', 'Manhattan', 'Main LLC', 'Wavecrest Management Group, Inc.', 2, '2026-10-01'),
+  ('nyc-hpd', 'h4', '1 OTHER STREET', 'Brooklyn', 'Other LLC', 'Other Management LLC', 1, '2026-09-01')`);
+ok((await one(`select public.agent_key('KNICKERBOCKER C/O WAVECREST MGMT GROUP INC.') as k`)).k === 'WAVECREST MANAGEMENT', 'manager names are matched across spellings');
+await as('anon');
+await rejects(db.query('select * from public.prospect_managers()'), 'the website cannot read the manager report');
+await rejects(db.query(`select public.prospects_to_portfolio_lead('WAVECREST MANAGEMENT')`), 'the website cannot make portfolio leads');
+await as('authenticated', CLIENT);
+ok((await db.query('select * from public.prospect_managers()')).rows.length === 0, 'clients see no managers');
+await rejects(db.query(`select public.prospects_to_portfolio_lead('WAVECREST MANAGEMENT')`), 'clients cannot make portfolio leads');
+await as('authenticated', STAFF);
+const mgrs = (await db.query('select * from public.prospect_managers()')).rows;
+const wave = mgrs.find((m) => m.manager === 'WAVECREST MANAGEMENT');
+ok(mgrs[0].manager === 'WAVECREST MANAGEMENT' && wave.buildings === 3 && wave.violations === 16 && wave.boroughs.Bronx === 2 && wave.boroughs.Manhattan === 1
+  && wave.items.length === 3 && !mgrs.some((m) => m.manager === 'BAY RIDGE GARDENS' || m.name === 'Anna Petrova'), 'staff see open buildings per manager, biggest first');
+ok((await db.query(`select * from public.prospect_managers('open', 'bronx')`)).rows.find((m) => m.manager === 'WAVECREST MANAGEMENT').buildings === 2, 'the manager report filters by borough');
+const pf = (await one(`select public.prospects_to_portfolio_lead('WAVECREST MANAGEMENT', 'Bronx') as id`)).id;
+const pfl = await one('select kind, name, borough, building, systems, message, source from public.leads where id = $1', [pf]);
+ok(pfl.kind === 'service' && pfl.borough === 'Bronx' && pfl.building === '2 buildings, 14 open HPD intercom violations' && pfl.systems === 'intercom-entry'
+  && pfl.message.includes('600 CONCORD AVENUE') && pfl.message.includes('270 EAST BURNSIDE AVENUE') && !pfl.message.includes('10 MAIN STREET')
+  && pfl.source.manager === 'WAVECREST MANAGEMENT' && pfl.source.buildings === 2, 'one portfolio lead covers the manager\'s buildings in the borough');
+ok((await one(`select count(*)::int as n from public.prospects where lead_id = $1 and status = 'lead'`, [pf])).n === 2, 'the buildings point to the portfolio lead');
+ok((await db.query('select * from public.prospect_managers()')).rows.find((m) => m.manager === 'WAVECREST MANAGEMENT').buildings === 1, 'buildings already in a lead leave the open list');
+await rejects(db.query(`select public.prospects_to_portfolio_lead('WAVECREST MANAGEMENT', 'Bronx')`), 'a building goes into one portfolio lead only');
 await as('authenticated', CLIENT);
 ok((await db.query('select id from public.job_offers')).rows.length === 0, 'clients do not see offers to pros');
 
