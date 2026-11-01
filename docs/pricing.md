@@ -1,6 +1,6 @@
 # Prices: where they come from
 
-Set 2026-11-01 at the owner's request: market-based prices instead of examples, placeholders only where no data exists. Values live in `src/data/plans.ts`, each with a one-line basis. These are researched market rates, not quotes EZTek has given; Mansur should check them against real jobs and change any that do not match how EZTek works.
+Set 2026-11-01 at the owner's request: market-based prices instead of examples, set to compete (at or under the market midpoint), with travel charged by distance from the office. Placeholders only where no data exists. Values live in `src/data/plans.ts`, each with a one-line basis. These are researched market rates, not quotes EZTek has given; Mansur should check them against real jobs and change any that do not match how EZTek works.
 
 Most sources are vendor guides and installer forums, not audited market data, so ranges were taken toward the upper end for New York City labor and building access.
 
@@ -9,12 +9,26 @@ Basis: service contracts in the security and AV integration trade cost 8-20% of 
 
 | Plan | Price | Reasoning |
 |---|---|---|
-| Essential | $129 | ~10% a year of a $15k installed system; one visit a year |
-| Priority | $279 | ~11% a year of a $30k system; two visits, 20% off labor |
-| Managed | from $590 | ~16% a year of a $45k+ system; labor included, so the higher end of the range |
+| Essential | $99 | ~8% a year of a $15k installed system: the low end of the 8-12% norm |
+| Priority | $229 | ~9% a year of a $30k system; travel waived |
+| Managed | from $490 | ~13% a year of a $45k+ system; labor included, travel waived |
 
 ## Service call without a plan
-$195 for the first hour on site, then $150 an hour, parts extra; 1.5x after hours. Basis: a published NYC integrator rate of $150 an hour with a $375 minimum ([Idesco](https://www.idesco.com/schedule_call.htm)).
+$149 for the first hour on site, then $125 an hour, parts extra; 1.5x after hours, plus travel by distance. Published NYC rates are $150 an hour with a $375 minimum ([Idesco](https://www.idesco.com/schedule_call.htm)) and $175 an hour flat for a Brooklyn installer ([Thumbtack](https://www.thumbtack.com/ny/brooklyn/handyman/unipros-security/service/491586780619431945)).
+
+## Travel by distance
+From the office at 1707 70th St (geocoded with the [US Census geocoder](https://geocoding.geo.census.gov/)). Road miles = straight line x 1.35. Free up to 6 road miles, then $4 per road mile per visit, capped at $95 inside the five boroughs; outside NYC no cap. Waived on Priority and Managed; the site survey is always free. NYC installers publish no trip fees, so this was set to charge about a third of the technician's driving time.
+
+| From Bensonhurst to | Road mi | Travel |
+|---|---|---|
+| Bay Ridge, Park Slope | 3-5 | $0 |
+| Williamsburg | 9 | $10 |
+| Midtown Manhattan | 13 | $25 |
+| Astoria | 15 | $35 |
+| Fordham, Riverdale (Bronx) | 24-26 | $70-80 |
+| Hempstead (Nassau) | 28 | $90 |
+
+Known limit: across water (Staten Island, New Jersey) the straight line is shorter than the drive, so those trips come out cheap. Staff can add a travel line by hand in a proposal.
 
 ## Quote wizard ranges (installed, equipment and labor)
 | System | Basis |

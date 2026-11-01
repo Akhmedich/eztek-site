@@ -146,6 +146,7 @@ const data = {
 
 <script>
   import { sendLead, MAX_FILES, MAX_FILE_MB, FILE_TYPES } from '../../scripts/lead';
+  import { travelFor, type Travel } from '../../scripts/travel';
 
   type Est = Record<string, { base: [number, number]; per?: { field: string; range: [number, number] } }>;
   const root = document.getElementById('quote')!;
@@ -268,6 +269,7 @@ const data = {
       ['Timing', D.times[radio('time')] ?? ''],
       ['Care plan', plan ? D.plans[plan] : ''],
       ['Survey', slot],
+      ['Travel', travel ? (travel.fee ? `${money(travel.fee)} per visit · ${travel.miles} mi` : `No charge · ${travel.miles} mi`) : ''],
       ['Files', picked.length ? `${picked.length} attached` : ''],
     ];
     const box = root.querySelector<HTMLElement>('[data-sum]')!;
@@ -282,7 +284,7 @@ const data = {
     est.hidden = !e;
     if (e) {
       root.querySelector('[data-est-v]')!.textContent = `${money(e[0])} – ${money(e[1])}`;
-      root.querySelector('[data-est-s]')!.textContent = (e[2].length ? `Assumes ${e[2].join(', ')}. ` : '') + 'Equipment and labor, before tax. Typical NYC ranges; the survey sets the exact price.';
+      root.querySelector('[data-est-s]')!.textContent = (e[2].length ? `Assumes ${e[2].join(', ')}. ` : '') + 'Equipment and labor, before tax. Typical NYC ranges; the survey is free and sets the exact price. Travel is shown once you add the address.';
     }
     const ul = root.querySelector('[data-units-label]');
     if (ul) ul.textContent = radio('type') === 'residence' ? 'Rooms to cover' : 'Apartments, suites or rooms';
@@ -324,6 +326,14 @@ const data = {
     err.textContent = ''; summary(); save();
   });
   form.addEventListener('input', () => { summary(); save(); });
+  // travel per visit, from the address (survey visits are free)
+  let travel: Travel | null = null;
+  form.addEventListener('change', async (e) => {
+    if ((e.target as HTMLInputElement).name !== 'address') return;
+    const a = val('address');
+    const t = await travelFor(a);
+    if (val('address') === a) { travel = t; summary(); }
+  });
   back.addEventListener('click', () => show(Math.max(1, step - 1)));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -339,6 +349,7 @@ const data = {
       project: D.projects[radio('project')] ?? '', timing: D.times[radio('time')] ?? '',
       size: ['units', 'floors', 'doors', 'cams'].map((k) => `${k}: ${val(k) || '-'}`).join(', '),
       care_plan: plan ? D.plans[plan] : '', survey_window: slot, estimate: e2 ? `${money(e2[0])}-${money(e2[1])}` : '',
+      travel: travel ? `${money(travel.fee)} per visit, ${travel.miles} road mi${travel.inNyc ? '' : ', outside NYC'}` : '',
     };
     if (picked.length) next.textContent = 'Uploading files…';
     const r = await sendLead('quote', 'Quote', 'Q', fields, val('website'), {}, picked);

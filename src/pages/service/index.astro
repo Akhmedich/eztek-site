@@ -3,7 +3,8 @@ import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
 import { SERVICES } from '../../data/services';
 import { company } from '../../data/company';
-import { u, tel, sms } from '../../lib/url';
+import { u, tel, sms, money } from '../../lib/url';
+import { SERVICE_CALL } from '../../data/plans';
 
 const URGENCY = [
   ['emergency', 'Emergency', 'The building is not secure: a door will not lock, entry or all cameras are down'],
@@ -38,7 +39,7 @@ const URGENCY = [
               <div class="field"><label for="s-phone">Phone</label><input id="s-phone" name="phone" type="tel" autocomplete="tel"></div>
               <div class="field"><label for="s-email">Email <span class="muted">(optional)</span></label><input id="s-email" name="email" type="email" autocomplete="email"></div>
               <div class="field"><label for="s-borough">Borough <span class="muted">(optional)</span></label><select id="s-borough" name="borough"><option value="">Choose…</option>{['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx', 'Outside NYC'].map((b) => <option>{b}</option>)}</select></div>
-              <div class="field full"><label for="s-addr">Building address</label><input id="s-addr" name="address" type="text" autocomplete="street-address" placeholder="Street, city, ZIP"></div>
+              <div class="field full"><label for="s-addr">Building address</label><input id="s-addr" name="address" type="text" autocomplete="street-address" placeholder="Street, city, ZIP" aria-describedby="s-rates"><p class="hint" id="s-rates" data-travel>{`Without a care plan: ${money(SERVICE_CALL.firstHour)} for the first hour on site, then ${money(SERVICE_CALL.hourly)} an hour, parts extra. Travel depends on the address.`}</p></div>
               <div class="field full"><label for="s-access">Access notes <span class="muted">(optional)</span></label><input id="s-access" name="access" type="text" placeholder="Who meets the tech, where the equipment is, parking"></div>
             </div>
             <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
@@ -79,12 +80,26 @@ const URGENCY = [
 
 <script>
   import { sendLead } from '../../scripts/lead';
+  import { travelFor } from '../../scripts/travel';
+  import { SERVICE_CALL } from '../../data/plans';
   const root = document.getElementById('svc')!;
   const form = root.querySelector<HTMLFormElement>('[data-form]')!;
   const err = root.querySelector<HTMLElement>('[data-err]')!;
   const val = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement)?.value ?? '').trim();
   const urgency = () => form.querySelector<HTMLInputElement>('input[name="urgency"]:checked')?.value ?? '';
   form.addEventListener('change', () => { root.querySelector<HTMLElement>('[data-emerg]')!.hidden = urgency() !== 'emergency'; err.textContent = ''; });
+  // the rates, with the travel charge for this address once it is known
+  const usd = (n: number) => '$' + n.toLocaleString('en-US');
+  const rates = `Without a care plan: ${usd(SERVICE_CALL.firstHour)} for the first hour on site, then ${usd(SERVICE_CALL.hourly)} an hour, parts extra.`;
+  let travel = '';
+  form.querySelector<HTMLInputElement>('[name=address]')!.addEventListener('change', async () => {
+    const a = val('address');
+    const t = await travelFor(a);
+    if (val('address') !== a) return;
+    const hint = root.querySelector<HTMLElement>('[data-travel]')!;
+    travel = t ? `${usd(t.fee)} per visit, ${t.miles} road mi` : '';
+    hint.textContent = `${rates} ${t ? (t.fee ? `Travel to this address: ${usd(t.fee)} (${t.miles} road miles from our Bensonhurst office); waived on Priority and Managed plans.` : 'No travel charge to this address.') : 'Travel depends on the address; we confirm it when we call.'}`;
+  });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const m = !urgency() ? 'Pick how urgent it is.'
@@ -98,6 +113,7 @@ const URGENCY = [
     btn.disabled = true; btn.textContent = 'Sending…';
     const fields: Record<string, string> = {};
     ['urgency', 'systems', 'client', 'message', 'name', 'phone', 'email', 'borough', 'address', 'access'].forEach((k) => (fields[k] = k === 'urgency' ? urgency() : val(k === 'systems' ? 'system' : k === 'message' ? 'description' : k)));
+    if (travel) fields.travel = travel;
     const r = await sendLead('service', urgency() === 'emergency' ? 'EMERGENCY service' : 'Service', 'S', fields, val('website'));
     btn.disabled = false; btn.textContent = 'Send request';
     if (!r.ok) { err.textContent = 'Could not send. Please call us.'; return; }

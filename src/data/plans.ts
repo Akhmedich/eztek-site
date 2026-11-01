@@ -1,14 +1,14 @@
-// Care plans, add-ons, service rates and the quote estimate.
-// Prices are MARKET-based (research of NYC and US 2026 pricing, owner's call 2026-11-01): each line
-// says what it rests on, and docs/pricing.md lists the sources. The two lines still carrying the
-// example marker had no usable market data and stay examples until the owner sets them.
+// Care plans, add-ons, service rates, travel and the quote estimate.
+// Prices are MARKET-based and set to compete (research of NYC and US 2026 pricing, owner's call
+// 2026-11-01): each line says what it rests on, and docs/pricing.md lists the sources. The two
+// lines still carrying the example marker had no usable market data.
 
-// Plans are priced from the industry norm for service contracts, 8-20% of the installed system's
-// value per year, applied to typical EZTek buildings (about $15k, $30k and $45k+ of installed systems).
+// Plans: service contracts in the trade run 8-20% of the installed system's value a year, most often
+// 8-12%. EZTek prices at the low end of that band (typical buildings: $15k, $30k, $45k+ installed).
 export const PLANS = {
-  essential: { name: 'Essential', price: 129, from: false, blurb: 'A service partner on file, with portal access and a yearly checkup.' }, // MARKET: ~10% of a $15k system a year
-  priority: { name: 'Priority', price: 279, from: false, blurb: 'Faster dispatch and twice-a-year maintenance for buildings people live and work in.' }, // MARKET: ~11% of a $30k system a year
-  managed: { name: 'Managed', price: 590, from: true, blurb: 'We watch the systems, cover labor on repairs and report to the owner or board.' }, // MARKET: ~16% of a $45k system a year, labor included
+  essential: { name: 'Essential', price: 99, from: false, blurb: 'A service partner on file, with portal access and a yearly checkup.' }, // MARKET: ~8% a year of a $15k system
+  priority: { name: 'Priority', price: 229, from: false, blurb: 'Faster dispatch and twice-a-year maintenance for buildings people live and work in.' }, // MARKET: ~9% a year of a $30k system
+  managed: { name: 'Managed', price: 490, from: true, blurb: 'We watch the systems, cover labor on repairs and report to the owner or board.' }, // MARKET: ~13% a year of a $45k+ system, labor included
 } as const;
 export type PlanId = keyof typeof PLANS;
 
@@ -20,33 +20,47 @@ export const PLAN_ROWS: [string, string, string, string][] = [ // MARKET: tiers 
   ['Firmware and security updates', '—', '✓', '✓'],
   ['Remote programming changes', 'Billed per change', '10 per month', 'Unlimited'],
   ['Labor on covered repairs', '10% off', '20% off', 'Included'],
+  ['Travel charge', 'Standard', 'Waived', 'Waived'],
   ['Device health monitoring', 'Add-on', 'Add-on', 'Included'],
   ['Owner or board report', '—', 'Yearly', 'Quarterly'],
   ['Account manager', '—', '—', 'Dedicated'],
 ];
 
 export const ADDONS = [
-  { name: 'Extended cloud video retention', unit: 'camera', price: 5, desc: 'Keep 90 days of footage instead of 30.' }, // MARKET: cloud video runs $7-20 per camera a month in full; retention only is less
+  { name: 'Extended cloud video retention', unit: 'camera', price: 4, desc: 'Keep 90 days of footage instead of 30.' }, // MARKET: full cloud video runs $7-20 per camera a month; retention only is less
   { name: 'Device health monitoring', unit: 'device', price: 2, desc: 'Alerts when a camera, reader or access point goes offline. Included in Managed.' }, // MARKET: $1-5 per device a month
   { name: 'After-hours coverage', unit: 'site', price: 120, desc: 'Evening, weekend and holiday dispatch. Included in Managed.' }, // PLACEHOLDER: no market data found
-  { name: 'Managed Wi-Fi', unit: 'access point', price: 8, desc: 'Firmware, channel planning and monthly reports.' }, // MARKET: managed Wi-Fi services $5-10 per access point a month
+  { name: 'Managed Wi-Fi', unit: 'access point', price: 6, desc: 'Firmware, channel planning and monthly reports.' }, // MARKET: managed Wi-Fi services $5-10 per access point a month
 ];
 
-// One-time service for buildings without a plan. MARKET: a published NYC integrator rate is
-// $150/hour with a $375 minimum (2.5 hours); a one-hour minimum with travel inside NYC is lower.
-export const SERVICE_CALL = { firstHour: 195, hourly: 150, afterHoursMultiplier: 1.5 };
+// One-time service without a plan. MARKET: published NYC rates are $150/hour with a $375 minimum
+// (Idesco) and $175/hour flat (a Brooklyn installer on Thumbtack); EZTek undercuts both and bills
+// travel separately by distance, so nearby Brooklyn buildings pay no travel at all.
+export const SERVICE_CALL = { firstHour: 149, hourly: 125, afterHoursMultiplier: 1.5 };
+
+// Travel per visit, from the office in Bensonhurst (company.geo) to the building. Road miles are
+// the straight-line distance x 1.35 (NYC street grid and bridges). No charge inside the free radius,
+// then per road mile, capped inside the five boroughs. Waived on Priority and Managed plans; the
+// free site survey never carries it. MARKET: NYC installers publish no trip fees (they quote it);
+// this charges about a third of the technician's actual driving time, to stay attractive.
+export const TRAVEL = { freeMiles: 6, perMile: 4, nycCap: 95, roadFactor: 1.35 };
+export function travelFee(roadMiles: number, inNyc: boolean): number {
+  const fee = Math.max(0, roadMiles - TRAVEL.freeMiles) * TRAVEL.perMile;
+  return Math.round((inNyc ? Math.min(fee, TRAVEL.nycCap) : fee) / 5) * 5;
+}
 
 // Ballpark ranges for the quote wizard, installed price in USD, equipment and labor, before tax.
-// MARKET: national 2026 ranges, taken toward the upper end for New York City labor and access.
+// MARKET: national 2026 ranges for New York City labor and access, held a little under the
+// midpoint so the first number a visitor sees is competitive. Travel is added by address.
 // per: what the count field multiplies; base: fixed part per project
 export const ESTIMATE: Record<string, { base: [number, number]; per?: { field: 'units' | 'doors' | 'cams' | 'floors'; range: [number, number] } }> = {
-  'video-surveillance': { base: [1500, 3500], per: { field: 'cams', range: [500, 1000] } }, // camera $150-600 + new Cat6 drop $150-300 + mounting; recorder and setup in base
-  'access-control': { base: [1500, 3000], per: { field: 'doors', range: [2000, 4000] } }, // $1.5-3.5k per door card/mobile, NYC single door $3-6k incl. controller
-  'alarm-systems': { base: [1500, 3000], per: { field: 'doors', range: [150, 350] } }, // business systems $1.5-3k installed; contacts and motion per opening
-  'intercom-entry': { base: [5000, 9000], per: { field: 'units', range: [40, 250] } }, // cloud video intercom $5-7k+ installed; app-only units low, in-unit stations high
-  'audio-video': { base: [2000, 5000], per: { field: 'units', range: [1500, 6000] } }, // whole-home audio $1.5-4k a room; conference rooms $7-20k
-  'networking-cabling': { base: [1500, 3500], per: { field: 'floors', range: [1500, 4500] } }, // Cat6 $150-300 a drop, about 10-15 drops a floor; rack, switch and firewall in base
-  'building-automation': { base: [2500, 6000], per: { field: 'units', range: [1000, 3000] } }, // lighting control $100-600 a control point, 4-6 points and a keypad a room
-  'system-integration': { base: [5000, 15000] }, // whole-home lighting and control projects start near $10k; weak sources, survey decides
+  'video-surveillance': { base: [1200, 3000], per: { field: 'cams', range: [450, 900] } }, // camera $150-600 + new Cat6 drop $150-300 + mounting; recorder and setup in base
+  'access-control': { base: [1200, 2800], per: { field: 'doors', range: [1800, 3600] } }, // $1.5-3.5k per door card/mobile, NYC single door $3-6k incl. controller
+  'alarm-systems': { base: [1200, 2800], per: { field: 'doors', range: [150, 300] } }, // business systems $1.5-3k installed; contacts and motion per opening
+  'intercom-entry': { base: [4500, 8500], per: { field: 'units', range: [40, 220] } }, // cloud video intercom $5-7k+ installed; app-only units low, in-unit stations high
+  'audio-video': { base: [1800, 4500], per: { field: 'units', range: [1500, 5500] } }, // whole-home audio $1.5-4k a room; conference rooms $7-20k
+  'networking-cabling': { base: [1200, 3000], per: { field: 'floors', range: [1500, 4000] } }, // Cat6 $150-300 a drop, about 10-15 drops a floor; rack, switch and firewall in base
+  'building-automation': { base: [2200, 5500], per: { field: 'units', range: [900, 2800] } }, // lighting control $100-600 a control point, 4-6 points and a keypad a room
+  'system-integration': { base: [4500, 14000] }, // whole-home lighting and control projects start near $10k; weak sources, the survey decides
   'maintenance-support': { base: [0, 0] },
 };
