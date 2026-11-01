@@ -4,6 +4,8 @@
 .ops-tag{font:600 11px var(--f-mono);letter-spacing:.1em;color:var(--fiber-ink);border:1px solid var(--fiber);padding:4px 7px;border-radius:2px}
 .ops-user{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink2)}
 .ops{padding-block:20px 60px;display:grid;gap:18px}
+/* while data loads: the part being replaced fades, the rest stays usable */
+.ops[aria-busy] .rows,.ops[aria-busy] #pane,#pane[aria-busy]{opacity:.55;transition:opacity .12s .08s;cursor:progress}
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
 @media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:520px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
