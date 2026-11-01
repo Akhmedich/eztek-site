@@ -45,6 +45,8 @@ const BOROUGHS = ['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx
         <div class="field"><label for="j-company">Company <span class="muted" data-company-hint>(partners)</span></label><input id="j-company" name="company" type="text" autocomplete="organization" maxlength="200"></div>
         <div class="field"><label for="j-phone">Phone</label><input id="j-phone" name="phone" type="tel" autocomplete="tel" required></div>
         <div class="field"><label for="j-email">Email <span class="muted">(optional)</span></label><input id="j-email" name="email" type="email" autocomplete="email"></div>
+        <div class="field full"><label for="j-base">Where you start from</label><input id="j-base" name="base_address" type="text" autocomplete="street-address" required placeholder="Street, city, ZIP (we send you jobs near it)"></div>
+        <div class="field"><label for="j-radius">How far you go</label><select id="j-radius" name="radius">{[10, 15, 25, 40, 60].map((m) => <option value={m} selected={m === 25}>{m} miles</option>)}</select></div>
         <div class="field"><label for="j-years">Years in the trade</label><input id="j-years" name="years" type="number" min="0" max="60" inputmode="numeric"></div>
         <div class="field"><label for="j-alarm">NYS alarm installer license # <span class="muted">(if you have one)</span></label><input id="j-alarm" name="alarm_license" type="text" maxlength="60"></div>
         <div class="field" data-partner-only hidden><label for="j-hic">NYC Home Improvement Contractor license #</label><input id="j-hic" name="hic_license" type="text" maxlength="60"></div>
@@ -69,6 +71,7 @@ const BOROUGHS = ['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx
 
 <script>
   import { mailCopy, refId } from '../../scripts/lead';
+  import { travelFor } from '../../scripts/travel';
   const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
   const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
   const root = document.getElementById('join')!;
@@ -92,16 +95,19 @@ const BOROUGHS = ['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx
       : val('phone').replace(/\D/g, '').length < 10 ? 'Add a phone number we can call.'
       : val('email') && !/^\S+@\S+\.\S+$/.test(val('email')) ? 'Check the email address.'
       : partner && !val('company') ? 'Add your company name.'
+      : !val('base_address') ? 'Add the address you start from, so we can send you jobs nearby.'
       : !checked('trades').length ? 'Pick at least one thing you install.' : '';
     if (m) { err.textContent = m; return; }
     if (val('website')) return; // bots
     const btn = root.querySelector<HTMLButtonElement>('[data-send]')!;
     btn.disabled = true; btn.textContent = 'Sending…';
+    const place = await travelFor(val('base_address')); // coordinates for routing jobs to the nearest pros
     const row = {
       kind: kind(), name: val('name'), company: val('company') || null, phone: val('phone'), email: val('email') || null,
       years: val('years') ? Number(val('years')) : null, alarm_license: val('alarm_license') || null,
       hic_license: partner ? val('hic_license') || null : null, insured: partner && !!(form.elements.namedItem('insured') as HTMLInputElement).checked,
       trades: checked('trades'), boroughs: checked('boroughs'), about: val('about') || null, source: { page: location.pathname },
+      base_address: place?.matched || val('base_address'), lat: place?.lat ?? null, lng: place?.lng ?? null, radius_miles: Number(val('radius')) || 25,
     };
     const id = refId('J');
     const jobs: Promise<boolean>[] = [

@@ -1,0 +1,75 @@
+---
+// The client rates a finished job (/review/?t=<jobs.review_token>, sent by staff after the job is
+// signed off). Stars, a few words, and whether we may show it on the website.
+import Layout from '../../layouts/Layout.astro';
+import { company } from '../../data/company';
+import { tel } from '../../lib/url';
+---
+<Layout title="Rate the work" description="Tell us how the work went." noindex>
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap" style="max-width:640px" id="rv" aria-live="polite" data-phone={company.phoneDisplay} data-tel={tel}>
+    <p class="muted">Loading…</p>
+  </div></section>
+</Layout>
+
+<style is:global>
+  .stars{display:flex;gap:4px;flex-direction:row-reverse;justify-content:flex-end}
+  .stars input{position:absolute;opacity:0;width:1px;height:1px}
+  .stars label{font-size:2.2rem;line-height:1;cursor:pointer;color:var(--line)}
+  .stars input:checked ~ label,.stars label:hover,.stars label:hover ~ label{color:var(--warn)}
+  .stars input:focus-visible + label{outline:2px solid var(--fiber);outline-offset:2px}
+</style>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  const root = document.getElementById('rv')!;
+  const call = `<a href="${root.dataset.tel}">${root.dataset.phone}</a>`;
+  const token = new URLSearchParams(location.search).get('t') || '';
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+  async function rpc(fn: string, args: Record<string, unknown>) {
+    const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: token, ...args }) });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(body?.message || 'Something went wrong.');
+    return body;
+  }
+
+  function render(j: Record<string, any>) {
+    const head = `<p class="eyebrow">${esc(j.number)}</p><h1 style="font-size:clamp(1.6rem,3vw,2.1rem);margin:8px 0">How did it go?</h1>
+      <p class="muted">${esc(j.title)}${j.pros?.length ? ` · ${esc(j.pros.join(', '))}` : ''}</p>`;
+    if (j.review) {
+      root.innerHTML = `${head}<div class="card stack" style="margin-top:18px"><p style="font-size:1.6rem;color:var(--warn)">${'★'.repeat(j.review.rating)}${'☆'.repeat(5 - j.review.rating)}</p>
+        ${j.review.body ? `<p>“${esc(j.review.body)}”</p>` : ''}<p class="small muted">Thank you. This helps us and the technicians who did the work. Something to fix? Call ${call}.</p></div>`;
+      return;
+    }
+    if (j.stage !== 'completed') { root.innerHTML = `${head}<p class="note" style="margin-top:18px">You can rate the work once the job is finished.</p>`; return; }
+    root.innerHTML = `${head}<form class="card stack" style="margin-top:18px">
+      <fieldset style="border:0;padding:0;margin:0"><legend class="small" style="margin-bottom:6px">Your rating</legend>
+        <div class="stars">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="s${n}" value="${n}" required><label for="s${n}" title="${n} star${n > 1 ? 's' : ''}">★</label>`).join('')}</div></fieldset>
+      <div class="field"><label for="b">What went well, or what we should do better</label><textarea id="b" name="body" rows="4" maxlength="2000"></textarea></div>
+      <div class="field"><label for="a">Your name as shown (first name and initial)</label><input id="a" name="author" type="text" maxlength="80" placeholder="Maria K."></div>
+      <label class="small"><input type="checkbox" name="publish"> You may show this review on the EZTek website.</label>
+      <p class="err" data-err></p><div><button class="btn">Send</button></div></form>`;
+  }
+
+  root.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target as HTMLFormElement;
+    const fd = new FormData(f);
+    const btn = f.querySelector('button')!;
+    btn.disabled = true;
+    try {
+      render(await rpc('submit_review', { p_rating: Number(fd.get('rating')), p_body: String(fd.get('body') || ''), p_author: String(fd.get('author') || ''), p_publish: fd.get('publish') === 'on' }));
+    } catch (x) { f.querySelector<HTMLElement>('[data-err]')!.textContent = (x as Error).message; btn.disabled = false; }
+  });
+
+  (async () => {
+    if (!SB_URL || !SB_KEY) { root.innerHTML = `<p class="note">This page works once the site is connected. Call ${call}.</p>`; return; }
+    if (!/^[0-9a-f-]{36}$/i.test(token)) { root.innerHTML = `<h1 style="font-size:1.8rem">Link not found</h1><p class="muted">Use the link from your message, or call ${call}.</p>`; return; }
+    try {
+      const j = await rpc('review_info', {});
+      if (!j) { root.innerHTML = `<h1 style="font-size:1.8rem">Link not found</h1><p class="muted">Call ${call}.</p>`; return; }
+      render(j);
+    } catch { root.innerHTML = `<p class="note">Could not load this page. Refresh, or call ${call}.</p>`; }
+  })();
+</script>

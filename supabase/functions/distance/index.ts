@@ -2,7 +2,8 @@
 // and proposals. Geocodes with the free US Census geocoder (no key) and estimates road miles as the
 // straight-line distance x 1.35. The site turns miles into dollars (src/data/plans.ts, TRAVEL).
 // Deploy with verify_jwt off: the site calls it with the publishable key; it checks the origin.
-// POST { address } -> { miles, in_nyc, matched } | { miles: null }
+// Also returns the coordinates, used to send jobs to the nearest pros.
+// POST { address } -> { miles, in_nyc, matched, lat, lng } | { miles: null }
 const ORIGINS = (Deno.env.get('ASSISTANT_ORIGINS') ?? 'https://akhmedich.github.io,https://eztekav.com,https://www.eztekav.com,http://localhost:4321')
   .split(',').map((o) => o.trim()).filter(Boolean);
 const OFFICE = { lat: 40.6176, lng: -73.9952 }; // 1707 70th St, Brooklyn (src/data/company.ts)
@@ -47,6 +48,8 @@ Deno.serve(async (req) => {
       miles: Math.round(miles(OFFICE, { lat: m.coordinates.y, lng: m.coordinates.x }) * ROAD_FACTOR * 10) / 10,
       in_nyc: !!county && NYC_COUNTIES.has(`${county.STATE}${county.COUNTY}`),
       matched: m.matchedAddress,
+      lat: m.coordinates.y,
+      lng: m.coordinates.x,
     };
     if (cache.size > 2000) cache.clear();
     cache.set(key, out);

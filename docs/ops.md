@@ -37,6 +37,9 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 - `/r/?q=…` the page behind a sticker: anyone in the building reports a problem; it arrives linked to the system.
 - `/join/` technicians and partner companies apply; staff review them in `/admin/` > Pros. Plan and rules: `docs/pro-network.md`.
 - `/p/?t=…` the client's proposal: compare options, accept by typing a name, pay the deposit by card or bank (ACH).
+- `/pro/?t=…` a pro's private page: jobs offered nearby, take or pass, the address once taken, bring in helpers, report done; partners sign the agreement here once.
+- `/review/?t=…` the client rates a finished job; reviews the client agrees to publish replace the sample quotes on the home page.
+- `/admin/` > Prospects: new buildings and large alterations from NYC permits (last 30 days, $250k and up), with filters; one click makes a lead.
 
 ## Server functions (`supabase/functions/`)
 | Function | What |
@@ -47,9 +50,11 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
 | `distance` | Road miles from the office to a building (US Census geocoder, no key), for the travel charge on quotes, service requests and proposals. Deployed without JWT check; it accepts only the site's own addresses. |
 | `proposal-checkout` | Stripe Checkout for the deposit on an accepted proposal; Stripe issues the invoice, so it shows in the portal. Deployed without JWT check: the proposal's secret link is the authorization. |
+| `intake` | Leads from marketplaces (Thumbtack, Angi, Yelp, Google Local Services) and other channels, through their official lead webhooks or a Zapier/Make step. Deployed without JWT check; the caller sends the `INTAKE_SECRET` secret in the `x-intake-secret` header. A lead with the same channel and id is stored once. |
+| `prospects` | Pulls fresh NYC DOB NOW filings (NYC Open Data, no key) into `prospects` when staff open the Prospects tab. Staff only. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 98 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 127 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.

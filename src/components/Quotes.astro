@@ -1,10 +1,29 @@
 ---
+// Client quotes. Until clients publish reviews (from their /review/ link), the sample quotes show,
+// marked Sample; once there are real ones, they replace the samples.
 import { QUOTES } from '../data/proof';
 ---
-<div class="grid g3">
+<div class="grid g3" data-quotes>
   {QUOTES.map((q) => (
     <blockquote class="card q">
       <p>“{q.text}”</p>
       <footer><b>{q.who}</b>{q.org} · <span class="draft">Sample</span></footer>
     </blockquote>))}
 </div>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  if (SB_URL && SB_KEY) {
+    fetch(`${SB_URL}/rest/v1/rpc/public_reviews`, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: '{}' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: { rating: number; body: string; author: string }[]) => {
+        if (!list.length) return;
+        document.querySelectorAll<HTMLElement>('[data-quotes]').forEach((box) => {
+          box.innerHTML = list.slice(0, 6).map((q) => `<blockquote class="card q"><p aria-label="${q.rating} out of 5 stars">${'★'.repeat(q.rating)}${'☆'.repeat(5 - q.rating)}</p><p>“${esc(q.body)}”</p><footer><b>${esc(q.author)}</b>${q.author === 'EZTek client' ? '' : 'EZTek client'}</footer></blockquote>`).join('');
+        });
+      })
+      .catch(() => {});
+  }
+</script>
