@@ -1,0 +1,120 @@
+---
+// Installers apply to work for EZTek (employees) or with EZTek (licensed partner businesses).
+// Applications go to the `pros` table for staff review and to the team's email.
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { SERVICES } from '../../data/services';
+import { company } from '../../data/company';
+import { u, tel } from '../../lib/url';
+
+const BOROUGHS = ['Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'The Bronx', 'Outside NYC'];
+---
+<Layout title="Work With EZTek: Technicians and Partner Installers" description="Licensed low-voltage technicians and installer companies in New York City: join the EZTek team or take jobs as a partner.">
+  <PageHero eyebrow="Work with us" title="More buildings than hands" lede="We get requests from property managers, boards and homeowners across New York City every day. Join the team, or take jobs as a licensed partner company." crumbs={[['Work with us', '/join/']]} />
+  <section class="band"><div class="wrap">
+    <div class="grid g2">
+      <div class="card stack" style="align-content:start">
+        <p class="eyebrow">Join the team</p>
+        <h2 style="font-size:1.4rem">Technician</h2>
+        <ul class="small stack" style="gap:6px;padding-left:18px;margin:0">
+          <li>Steady work on cameras, access control, intercoms, networks and AV, scheduled through our dashboard</li>
+          <li>W-2 employment; we handle the client, the paperwork and the parts</li>
+          <li>Alarm and security work under EZTek's license; we help you get your own NYS installer license</li>
+        </ul>
+      </div>
+      <div class="card stack" style="align-content:start">
+        <p class="eyebrow">Partner company</p>
+        <h2 style="font-size:1.4rem">Licensed installer business</h2>
+        <ul class="small stack" style="gap:6px;padding-left:18px;margin:0">
+          <li>Jobs offered to you with the scope, the building and the pay agreed before you accept</li>
+          <li>EZTek handles sales, the client contract, payment collection and warranty; you get paid after each job is signed off</li>
+          <li>Requirements: your own company, NYS Department of State alarm installer license for security work, NYC Home Improvement Contractor license for residential work, general liability and workers' comp insurance</li>
+        </ul>
+      </div>
+    </div>
+  </div></section>
+  <section class="band alt"><div class="wrap" id="join">
+    <form class="card stack" style="max-width:820px;margin:0 auto;padding:clamp(18px,3vw,28px)" novalidate data-form>
+      <h2 style="font-size:1.4rem">Apply</h2>
+      <div class="opts c2" role="radiogroup" aria-label="How you want to work with us">
+        <label class="opt"><input type="radio" name="kind" value="employee" checked><b>Join the team</b><span>Technician, W-2</span></label>
+        <label class="opt"><input type="radio" name="kind" value="partner"><b>Partner company</b><span>Licensed and insured business</span></label>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label for="j-name">Your name</label><input id="j-name" name="name" type="text" autocomplete="name" required maxlength="120"></div>
+        <div class="field"><label for="j-company">Company <span class="muted" data-company-hint>(partners)</span></label><input id="j-company" name="company" type="text" autocomplete="organization" maxlength="200"></div>
+        <div class="field"><label for="j-phone">Phone</label><input id="j-phone" name="phone" type="tel" autocomplete="tel" required></div>
+        <div class="field"><label for="j-email">Email <span class="muted">(optional)</span></label><input id="j-email" name="email" type="email" autocomplete="email"></div>
+        <div class="field"><label for="j-years">Years in the trade</label><input id="j-years" name="years" type="number" min="0" max="60" inputmode="numeric"></div>
+        <div class="field"><label for="j-alarm">NYS alarm installer license # <span class="muted">(if you have one)</span></label><input id="j-alarm" name="alarm_license" type="text" maxlength="60"></div>
+        <div class="field" data-partner-only hidden><label for="j-hic">NYC Home Improvement Contractor license #</label><input id="j-hic" name="hic_license" type="text" maxlength="60"></div>
+        <label class="field small" data-partner-only hidden style="align-self:end"><span><input type="checkbox" name="insured"> We carry general liability and workers' comp insurance</span></label>
+      </div>
+      <div><p class="lbl-t" style="margin-bottom:8px">What you install</p>
+        <div class="opts c2">{SERVICES.filter((s) => s.slug !== 'maintenance-support').map((s) => <label class="opt"><input type="checkbox" name="trades" value={s.slug}><b>{s.name}</b></label>)}</div></div>
+      <div><p class="lbl-t" style="margin-bottom:8px">Where you work</p>
+        <div class="slots">{BOROUGHS.map((b) => <label class="slotbtn"><input type="checkbox" name="boroughs" value={b} style="margin-right:6px">{b}</label>)}</div></div>
+      <div class="field"><label for="j-about">About you <span class="muted">(optional)</span></label><textarea id="j-about" name="about" maxlength="2000" placeholder="Brands you know, certifications, tools and vehicle, crew size"></textarea></div>
+      <div class="hp" aria-hidden="true"><label>Leave empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <p class="small muted">We check licenses with the NYS Department of State and call every applicant. <a href={u('/privacy/')}>Privacy</a></p>
+      <p class="err" role="alert" data-err></p>
+      <div class="row"><button class="btn" type="submit" data-send>Send application</button></div>
+    </form>
+    <div class="done-card" data-done hidden tabindex="-1" style="max-width:820px;margin:0 auto">
+      <p class="eyebrow">Application received</p><h2>Thanks. We will call you.</h2>
+      <p>Questions in the meantime: <a href={tel}>{company.phoneDisplay}</a>.</p>
+    </div>
+  </div></section>
+</Layout>
+
+<script>
+  import { mailCopy, refId } from '../../scripts/lead';
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  const root = document.getElementById('join')!;
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const err = root.querySelector<HTMLElement>('[data-err]')!;
+  const val = (n: string) => ((form.elements.namedItem(n) as HTMLInputElement)?.value ?? '').trim();
+  const checked = (n: string) => Array.from(form.querySelectorAll<HTMLInputElement>(`input[name="${n}"]:checked`)).map((i) => i.value);
+  const kind = () => checked('kind')[0] || 'employee';
+  const sync = () => {
+    const partner = kind() === 'partner';
+    form.querySelectorAll<HTMLElement>('[data-partner-only]').forEach((el) => (el.hidden = !partner));
+    form.querySelector<HTMLElement>('[data-company-hint]')!.textContent = partner ? '' : '(optional)';
+  };
+  form.addEventListener('change', () => { sync(); err.textContent = ''; });
+  sync();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const partner = kind() === 'partner';
+    const m = !val('name') ? 'Add your name.'
+      : val('phone').replace(/\D/g, '').length < 10 ? 'Add a phone number we can call.'
+      : val('email') && !/^\S+@\S+\.\S+$/.test(val('email')) ? 'Check the email address.'
+      : partner && !val('company') ? 'Add your company name.'
+      : !checked('trades').length ? 'Pick at least one thing you install.' : '';
+    if (m) { err.textContent = m; return; }
+    if (val('website')) return; // bots
+    const btn = root.querySelector<HTMLButtonElement>('[data-send]')!;
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const row = {
+      kind: kind(), name: val('name'), company: val('company') || null, phone: val('phone'), email: val('email') || null,
+      years: val('years') ? Number(val('years')) : null, alarm_license: val('alarm_license') || null,
+      hic_license: partner ? val('hic_license') || null : null, insured: partner && !!(form.elements.namedItem('insured') as HTMLInputElement).checked,
+      trades: checked('trades'), boroughs: checked('boroughs'), about: val('about') || null, source: { page: location.pathname },
+    };
+    const id = refId('J');
+    const jobs: Promise<boolean>[] = [
+      SB_URL && SB_KEY
+        ? fetch(`${SB_URL}/rest/v1/pros`, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify(row) }).then((r) => r.ok).catch(() => false)
+        : Promise.resolve(false),
+      mailCopy(partner ? 'Partner application' : 'Technician application', id, Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'source').map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : String(v ?? '')]))).catch(() => false),
+    ];
+    const ok = (await Promise.all(jobs)).some(Boolean) || !(SB_URL && SB_KEY);
+    btn.disabled = false; btn.textContent = 'Send application';
+    if (!ok) { err.textContent = 'Could not send. Please call us or try again.'; return; }
+    form.hidden = true;
+    const done = root.querySelector<HTMLElement>('[data-done]')!;
+    done.hidden = false; done.focus();
+  });
+</script>

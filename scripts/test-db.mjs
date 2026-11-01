@@ -191,6 +191,21 @@ await as('service_role');
 await db.query(`update public.proposals set deposit_status = 'paid' where id = $1`, [prop.id]);
 ok(true, 'the Stripe webhook can mark the deposit paid');
 
+// pro network: installers and partner businesses apply; only staff read applications
+await as('anon');
+await db.query(`insert into public.pros (kind, name, company, phone, trades, boroughs, alarm_license, insured) values ('partner', 'Sam Lee', 'Lee Low Voltage LLC', '7185550144', '{access-control,video-surveillance}', '{Brooklyn,Queens}', '12000123456', true)`);
+ok(true, 'an installer can apply on the website');
+await rejects(db.query('select * from public.pros'), 'the website cannot read applications');
+await rejects(db.query(`insert into public.pros (kind, name, phone, status) values ('employee', 'Self Approved', '7185550145', 'approved')`), 'an applicant cannot approve themselves');
+await rejects(db.query(`insert into public.pros (kind, name, phone, trades) values ('employee', 'Odd Trade', '7185550146', '{plumbing}')`), 'only EZTek trades are accepted');
+await as('authenticated', STAFF);
+const pro = await one(`select id, status from public.pros where name = 'Sam Lee'`);
+ok(pro?.status === 'applied', 'staff see the application');
+await db.query(`update public.pros set status = 'approved', staff_notes = 'License checked on DOS lookup' where id = $1`, [pro.id]);
+ok(true, 'staff approve it');
+await as('authenticated', CLIENT);
+ok((await db.query('select id from public.pros')).rows.length === 0, 'clients cannot see installers');
+
 // photos and plans on a quote request
 const FILES_LEAD = '11111111-1111-4111-8111-111111111111';
 const upload = (folder, file) => db.query(`insert into storage.objects (bucket_id, name) values ('lead-files', $1)`, [`${folder}/${file}`]);
