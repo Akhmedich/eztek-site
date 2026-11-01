@@ -47,7 +47,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `proposal-checkout` | Stripe Checkout for the deposit on an accepted proposal; Stripe issues the invoice, so it shows in the portal. Deployed without JWT check: the proposal's secret link is the authorization. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 82 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 91 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
@@ -86,7 +86,7 @@ Until this is done, the portal's billing buttons say online billing is not set u
 4. The client opens the link, compares the options, accepts one by typing their name and pays the deposit by card or bank. You see Viewed, then Accepted with the amount, then Deposit paid; the lead is marked Won.
 5. Until Stripe is set up, the client can still accept; the page says you will call to take the deposit.
 
-Before taking deposits from homeowners, check New York's rules for home improvement deposits with EZTek's lawyer (`docs/pricing.md`).
+Residential jobs follow New York's home improvement rules: approximate dates before sending, the required notices on the client's page, three business days to cancel, and online deposits only once an escrow account is in place. What it means and what the owner needs to do: `docs/home-improvement.md`.
 
 ## Website assistant (owner, about 10 minutes)
 A chat button on every public page ("Ask EZTek"). Visitors type or speak (Chrome, Edge, Safari), and the assistant answers out loud if they turn voice on. It answers only from confirmed facts: `npm run assistant:knowledge` builds its reference from `src/data` and leaves out every PLACEHOLDER value (prices, hours, licenses, ratings), so it never quotes them; for prices it sends people to `/quote/`. When a visitor wants a call back, it repeats the details, asks them to confirm and saves the request like a website form: a lead in EZTek Ops with `source.channel = assistant`, plus the usual email copy.

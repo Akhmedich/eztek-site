@@ -23,6 +23,9 @@ export const company = {
   emergency: 'Emergency dispatch 24/7 for care plan clients', // PLACEHOLDER
   license: 'NYS DOS Security & Fire Alarm Installer License #00-000000', // PLACEHOLDER
   insurance: '$2M general liability · $5M umbrella · workers comp', // PLACEHOLDER
+  // Required on residential (home improvement) contracts, GBL § 771; shown on /p/ only when filled in
+  hicLicense: '', // PLACEHOLDER: NYC DCWP Home Improvement Contractor license number
+  insurer: '', // PLACEHOLDER: insurer of the policy covering the work, with its address and phone
   responseTime: '4 hours', // PLACEHOLDER: emergency on-site target for Managed plan
   callback: 'within one business hour', // PLACEHOLDER: how fast a new lead gets a call
   proposalDays: 3, // PLACEHOLDER: business days from survey to proposal

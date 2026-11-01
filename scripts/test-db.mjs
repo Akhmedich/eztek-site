@@ -143,11 +143,12 @@ await rejects(db.query(`insert into public.jobs (org_id, system_id, title) value
 
 // proposals: written by staff, opened and accepted by the client through a secret link
 await as('authenticated', STAFF);
-const prop = await one(`insert into public.proposals (job_id, title, options) values ($1, 'Lobby intercom upgrade', $2) returning id, number, org_id`, [jobId, JSON.stringify([
+const prop = await one(`insert into public.proposals (job_id, title, schedule, options) values ($1, 'Lobby intercom upgrade', 'Start about Nov 15; done about Nov 20', $2) returning id, number, org_id, home_improvement`, [jobId, JSON.stringify([
   { key: 'a', name: 'Essential', lines: [{ desc: 'Video intercom panel', qty: 1, price: 4200 }, { desc: 'Installation', qty: 1, price: 1800 }] },
   { key: 'b', name: 'Recommended', lines: [{ desc: 'Video intercom panel', qty: 1, price: 4200 }, { desc: 'Lobby cameras', qty: 4, price: 650.5 }] },
 ])]);
 ok(/^P-\d{4}$/.test(prop.number) && prop.org_id === job.org_id, `staff write proposal ${prop.number} for the job's client`);
+ok(prop.home_improvement === true, 'a proposal for an apartment building follows the home improvement rules');
 prop.token = (await one('select token from public.proposal_tokens($1) where id = $2', [jobId, prop.id])).token;
 ok(!!prop.token, 'staff get the client link through proposal_tokens');
 await rejects(db.query(`insert into public.proposals (job_id, title, options) values ($1, 'Bad', '[{"key":"a","name":"A","lines":[{"desc":"x","qty":1,"price":"abc"}]}]')`, [jobId]), 'malformed options are rejected');
@@ -190,6 +191,30 @@ ok((await one('select public.proposal_by_token($1) as p', [stale.token])).p.stat
 await as('service_role');
 await db.query(`update public.proposals set deposit_status = 'paid' where id = $1`, [prop.id]);
 ok(true, 'the Stripe webhook can mark the deposit paid');
+
+// New York home improvement rules: dates before sending, three business days to cancel
+await as('authenticated', STAFF);
+const hi = await one(`insert into public.proposals (job_id, title, options) values ($1, 'Second building', $2) returning id`, [jobId, JSON.stringify([{ key: 'a', name: 'A', lines: [{ desc: 'Panel', qty: 1, price: 1000 }] }])]);
+await rejects(db.query(`update public.proposals set status = 'sent' where id = $1`, [hi.id]), 'a home improvement proposal needs dates before it is sent');
+await db.query(`update public.proposals set schedule = 'Start about Dec 1; done about Dec 3', status = 'sent' where id = $1`, [hi.id]);
+ok((await one('select issued_by from public.proposals where id = $1', [hi.id])).issued_by === 'Mansur', 'the sender signs it for EZTek');
+const hiToken = (await one('select token from public.proposal_tokens($1) where id = $2', [jobId, hi.id])).token;
+const plain = await one(`insert into public.proposals (job_id, title, home_improvement, options) values ($1, 'Office cabling', false, $2) returning id`, [jobId, JSON.stringify([{ key: 'a', name: 'A', lines: [{ desc: 'Drop', qty: 2, price: 200 }] }])]);
+await db.query(`update public.proposals set status = 'sent' where id = $1`, [plain.id]);
+const plainToken = (await one('select token from public.proposal_tokens($1) where id = $2', [jobId, plain.id])).token;
+await as('anon');
+const signed = (await one('select public.accept_proposal($1, $2, $3) as p', [hiToken, 'a', 'Dana Kim'])).p;
+const days = (new Date(signed.cancel_until) - new Date(signed.accepted_at)) / 864e5;
+ok(signed.home_improvement && days > 3 && days < 6.1, 'accepting starts a three-business-day cancellation period');
+const cancelled = (await one('select public.cancel_proposal($1) as p', [hiToken])).p;
+ok(cancelled.status === 'declined' && !!cancelled.cancelled_at && cancelled.deposit_status === 'none', 'the owner can cancel online within the period');
+await rejects(db.query('select public.cancel_proposal($1)', [hiToken]), 'a cancelled contract cannot be cancelled again');
+ok((await one('select public.accept_proposal($1, $2, $3) as p', [plainToken, 'a', 'Dana Kim'])).p.cancel_until === null, 'a commercial job has no cancellation period');
+await rejects(db.query('select public.cancel_proposal($1)', [plainToken]), 'and cannot be cancelled online');
+await as('');
+await db.query(`update public.proposals set cancel_until = now() - interval '1 minute' where id = $1`, [prop.id]);
+await as('anon');
+await rejects(db.query('select public.cancel_proposal($1)', [prop.token]), 'after the period the contract cannot be cancelled online');
 
 // photos and plans on a quote request
 const FILES_LEAD = '11111111-1111-4111-8111-111111111111';
