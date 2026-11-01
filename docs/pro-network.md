@@ -31,7 +31,6 @@ Clients rate a finished job (1 to 5 stars, a few words) from the review link; th
 ## New demand
 - **Marketplaces.** Thumbtack, Angi, Yelp and Google Local Services send leads through their own lead notifications; connect each with a Zapier or Make step that posts to the `intake` function (`docs/ops.md`). They arrive in the dashboard like website requests, with the channel.
 - **Permits.** New buildings and large alterations filed with NYC Buildings arrive in the Prospects tab; staff reach out to the owner or the architect.
-- Not done on purpose: scraping marketplaces or contacting people automatically. It breaks the sites' terms, and automated texts and calls without consent are illegal (TCPA).
 
 ## Still to decide (owner)
 - Whether EZTek supplies all equipment, or partners may supply their own at set prices.
