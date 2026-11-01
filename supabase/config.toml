@@ -426,3 +426,7 @@ verify_jwt = false
 # Clients pay the deposit from the proposal link without signing in; the proposal token authorizes it
 [functions.proposal-checkout]
 verify_jwt = false
+
+# Website visitors call this with the publishable key for the travel charge; it checks the origin
+[functions.distance]
+verify_jwt = false

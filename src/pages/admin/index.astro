@@ -23,6 +23,7 @@ import { u } from '../../lib/url';
   <script>
     import { sb, esc, ago, when, localInput } from '../../lib/supabase';
     import { company } from '../../data/company';
+    import { travelFor } from '../../scripts/travel';
 
     const app = document.getElementById('app')!;
     const who = document.getElementById('who')!;
@@ -275,6 +276,7 @@ import { u } from '../../lib/url';
           <div class="field"><label for="pv">Valid until</label><input id="pv" name="valid" type="date" value="${esc(p?.valid_until || '')}"></div>
           <div class="field"><label for="pc">Suggest care plan</label><select id="pc" name="plan"><option value="">None</option>${['essential', 'priority', 'managed'].map((k) => `<option value="${k}"${p?.care_plan === k ? ' selected' : ''}>${label(k)}</option>`).join('')}</select></div>
         </div>
+        <p class="hint" data-prop-travel></p>
         <p class="err" data-prop-err></p>
         <div class="row"><button class="btn sm">Save draft</button><button type="button" class="btn sm ghost" data-prop-cancel>Cancel</button></div>
       </form>`;
@@ -314,8 +316,16 @@ import { u } from '../../lib/url';
       if (d.lead) return pick(d.lead);
       if (d.job) return pick(d.job);
       const editor = app.querySelector<HTMLElement>('[data-prop-editor]');
-      if (d.propNew !== undefined && editor) { editor.innerHTML = propEditor(); return editor.querySelector('input')?.focus(); }
-      if (d.propEdit && editor) { editor.innerHTML = propEditor(props.get(d.propEdit)); return editor.querySelector('input')?.focus(); }
+      if ((d.propNew !== undefined || d.propEdit) && editor) {
+        editor.innerHTML = propEditor(d.propEdit ? props.get(d.propEdit) : undefined);
+        editor.querySelector('input')?.focus();
+        // travel to this building per visit, to add as a line if the job needs several visits
+        const addr = rows.find((r) => r.id === S.sel)?.sites?.address;
+        const t = addr ? await travelFor(addr) : null;
+        const hint = editor.querySelector<HTMLElement>('[data-prop-travel]');
+        if (hint) hint.textContent = t ? `Travel to ${t.matched}: ${t.fee ? money(t.fee) + ' per visit' : 'no charge'} (${t.miles} road mi). Add it as a line, e.g. "Travel | 3 | ${t.fee}", for jobs with several visits.` : addr ? 'Travel could not be worked out for this address.' : '';
+        return;
+      }
       if (d.propCancel !== undefined && editor) { editor.innerHTML = ''; return; }
       if (d.propClose) {
         if (!confirmClose(d.propClose)) return;
