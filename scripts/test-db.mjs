@@ -223,6 +223,8 @@ ok(true, 'an installer can apply on the website');
 await rejects(db.query('select * from public.pros'), 'the website cannot read applications');
 await rejects(db.query(`insert into public.pros (kind, name, phone, status) values ('employee', 'Self Approved', '7185550145', 'approved')`), 'an applicant cannot approve themselves');
 await rejects(db.query(`insert into public.pros (kind, name, phone, trades) values ('employee', 'Odd Trade', '7185550146', '{plumbing}')`), 'only EZTek trades are accepted');
+await rejects(db.query(`insert into public.pros (kind, name, phone, agreement_at) values ('partner', 'Pre Signed', '7185550147', now())`), 'an applicant cannot sign the agreement in advance');
+await rejects(db.query(`insert into public.pros (kind, name, phone, token) values ('partner', 'Own Link', '7185550148', '66666666-6666-4666-8666-666666666666')`), 'an applicant cannot pick the private link');
 await as('authenticated', STAFF);
 const pro = await one(`select id, status from public.pros where name = 'Sam Lee'`);
 ok(pro?.status === 'applied', 'staff see the application');
@@ -230,6 +232,74 @@ await db.query(`update public.pros set status = 'approved', staff_notes = 'Licen
 ok(true, 'staff approve it');
 await as('authenticated', CLIENT);
 ok((await db.query('select id from public.pros')).rows.length === 0, 'clients cannot see installers');
+
+// dispatch: the nearest approved pros get the job; the first to accept takes it and can bring helpers
+await as('');
+await db.query(`update public.jobs set stage = 'received' where id = $1`, [jobId]); // reopened for the dispatch tests
+await db.query(`update public.pros set lat = 40.7644, lng = -73.9235, radius_miles = 25 where name = 'Sam Lee'`); // Astoria
+const near = await one(`insert into public.pros (kind, name, phone, status, lat, lng, radius_miles) values ('employee', 'Ana Ruiz', '7185550155', 'approved', 40.6290, -74.0260, 15) returning id, token`); // Bay Ridge
+const far = await one(`insert into public.pros (kind, name, phone, status, lat, lng, radius_miles) values ('employee', 'Far Away', '7185550166', 'approved', 41.2, -73.7, 10) returning id`);
+const sam = await one(`select id, token from public.pros where name = 'Sam Lee'`);
+await as('authenticated', STAFF);
+const offered = (await db.query('select * from public.offer_job($1, $2, $3, 3, 400)', [jobId, 40.6265, -74.0360])).rows;
+ok(offered.length === 2 && offered[0].name === 'Ana Ruiz' && Number(offered[0].miles) < Number(offered[1].miles), 'a job goes to the nearest pros first');
+ok(!offered.some((o) => o.name === 'Far Away'), 'pros outside their radius are left out');
+ok((await one('select lat from public.sites where id = $1', [job.site_id])).lat === 40.6265, 'the building keeps its location');
+await as('anon');
+await rejects(db.query('select * from public.job_offers'), 'the website cannot list offers');
+const home = (await one('select public.pro_home($1) as h', [sam.token])).h;
+ok(home.offers.length === 1 && home.offers[0].address === null && home.offers[0].borough === 'Brooklyn', 'a pro sees the offer and the area, not the address yet');
+ok(home.offers[0].title === null && home.offers[0].description === null && home.offers[0].crew === null, "nor the client's own words or the other pros");
+const samOffer = home.offers[0].id;
+await rejects(db.query('select public.pro_respond($1, $2, true)', [sam.token, samOffer]), 'a partner signs the agreement before taking jobs');
+await db.query('select public.pro_sign($1, $2)', [sam.token, 'Sam Lee']);
+const took = (await one('select public.pro_respond($1, $2, true) as h', [sam.token, samOffer])).h;
+ok(took.offers[0].status === 'accepted' && took.offers[0].address === '100 Shore Rd, Brooklyn', 'after accepting, the pro sees the address');
+const anaOffer = (await one('select public.pro_home($1) as h', [near.token])).h.offers;
+ok(anaOffer.length === 0, 'the other offers are withdrawn once one pro takes the job');
+const helpers = (await db.query('select * from public.pro_helpers($1, $2)', [sam.token, samOffer])).rows;
+ok(helpers.length >= 1 && helpers[0].name === 'Ana Ruiz', 'the lead pro sees nearby pros to bring in');
+await rejects(db.query('select public.pro_invite($1, $2, $3)', [near.token, samOffer, far.id]), 'only the lead pro brings in helpers');
+await db.query('select public.pro_invite($1, $2, $3, $4)', [sam.token, samOffer, near.id, 'Two doors, need a second pair of hands']);
+const anaHome = (await one('select public.pro_home($1) as h', [near.token])).h;
+ok(anaHome.offers.length === 1 && anaHome.offers[0].role === 'helper', 'the helper gets it on their own link');
+await db.query('select public.pro_respond($1, $2, true)', [near.token, anaHome.offers[0].id]);
+const doneHome = (await one('select public.pro_done($1, $2, $3) as h', [sam.token, samOffer, 'Panel installed, tested'])).h;
+ok(doneHome.offers[0].status === 'done', 'the lead pro reports the work done');
+await as('');
+await db.query(`update public.jobs set stage = 'completed' where id = $1`, [jobId]);
+const late = await one(`insert into public.job_offers (job_id, pro_id) values ($1, $2) returning id, (select token from public.pros where id = $2) as token`, [jobId, far.id]);
+await as('anon');
+ok((await one('select public.pro_home($1) as h', [late.token])).h.offers.length === 0, 'offers on a finished job drop off');
+await rejects(db.query('select public.pro_respond($1, $2, true)', [late.token, late.id]), 'and cannot be taken');
+ok((await one('select public.pro_home($1) as h', ['55555555-5555-4555-8555-555555555555'])).h === null, 'a wrong pro link shows nothing');
+
+// reviews: the client rates the finished job; published ones show on the site
+await as('authenticated', STAFF);
+const rt = (await one('select review_token from public.jobs where id = $1', [jobId])).review_token;
+await as('anon');
+const info = (await one('select public.review_info($1) as r', [rt])).r;
+ok(info.number === job.number && info.pros.includes('Sam Lee'), 'the review link shows the job and who did it');
+await rejects(db.query('select public.submit_review($1, 6, $2, $3, true)', [rt, 'x', 'Dana K.']), 'ratings are 1 to 5');
+await db.query('select public.submit_review($1, 5, $2, $3, true)', [rt, 'On time, clean work.', 'Dana K.']);
+const pub = (await db.query('select * from public.public_reviews()')).rows;
+ok(pub.length === 1 && pub[0].author === 'Dana K.' && pub[0].rating === 5, 'a published review shows on the site');
+ok((await one('select public.pro_home($1) as h', [sam.token])).h.rating === 5, "the pro's rating counts it");
+await rejects(db.query('select * from public.reviews'), 'the website cannot read reviews directly');
+await rejects(db.query('select * from public.prospects'), 'the website cannot read prospects');
+await as('service_role');
+const permit = await one(`insert into public.prospects (source_id, filed_on, job_type, address, borough, owner_business, cost, units) values ('B01429125-I1', '2026-10-30', 'Alteration CO', '1407 LINDEN BOULEVARD', 'Brooklyn', 'Summit Property Management', 329095, 141) returning id`);
+await db.query(`insert into public.prospects (source_id) values ('B01429125-I1') on conflict do nothing`);
+ok((await db.query('select id from public.prospects')).rows.length === 1, 'a permit is stored once');
+await as('authenticated', CLIENT);
+await rejects(db.query('select public.prospect_to_lead($1)', [permit.id]), 'clients cannot turn prospects into leads');
+await as('authenticated', STAFF);
+const fromPermit = (await one('select public.prospect_to_lead($1) as id', [permit.id])).id;
+const pl = await one('select name, building, source from public.leads where id = $1', [fromPermit]);
+ok(pl.name === 'Summit Property Management' && pl.building === '141 units' && pl.source.permit === 'B01429125-I1', 'staff turn a permit into a lead in one step');
+await rejects(db.query('select public.prospect_to_lead($1)', [permit.id]), 'a prospect becomes a lead once');
+await as('authenticated', CLIENT);
+ok((await db.query('select id from public.job_offers')).rows.length === 0, 'clients do not see offers to pros');
 
 // photos and plans on a quote request
 const FILES_LEAD = '11111111-1111-4111-8111-111111111111';

@@ -1,0 +1,120 @@
+---
+// A pro's private page (/pro/?t=<token>, sent by EZTek when they are approved): jobs offered nearby,
+// accept or decline, the address once accepted, bring in helpers, report done. Partners sign the
+// subcontract once here. No account needed; the link is the key.
+import Layout from '../../layouts/Layout.astro';
+import { company } from '../../data/company';
+import { AGREEMENT } from '../../data/agreement';
+import { tel } from '../../lib/url';
+---
+<Layout title="Your jobs" description="Jobs offered to you by EZTek." noindex>
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap" id="pro" aria-live="polite"
+    data-agreement={JSON.stringify(AGREEMENT)} data-phone={company.phoneDisplay} data-tel={tel}>
+    <p class="muted">Loading your jobs…</p>
+  </div></section>
+</Layout>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  const root = document.getElementById('pro')!;
+  const D = root.dataset;
+  const AGREEMENT = JSON.parse(D.agreement!) as [string, string][];
+  const token = new URLSearchParams(location.search).get('t') || '';
+  type Row = Record<string, any>;
+
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const money = (n: number) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const when = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const call = `<a href="${esc(D.tel)}">${esc(D.phone)}</a>`;
+  const STATUS: Record<string, string> = { offered: 'New offer', accepted: 'Yours', done: 'Done', declined: 'Declined' };
+  const words = (s: string) => String(s || '').replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  // before a pro takes a job they see the kind of work, not the client's own description
+  const what = (o: Row) => o.title || [words(o.service), o.kind].filter(Boolean).join(' · ') || 'Job';
+
+  async function rpc(fn: string, args: Record<string, unknown>) {
+    const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: token, ...args }) });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(body?.message || 'Something went wrong.');
+    return body;
+  }
+
+  function card(o: Row) {
+    const head = `<div class="row sp"><b>${esc(o.number)} · ${esc(what(o))}</b><span class="pill ${o.status === 'offered' ? 'info' : o.status === 'accepted' ? 'ok' : 'mute'}">${STATUS[o.status] || o.status}${o.role === 'helper' ? ' · helper' : ''}</span></div>`;
+    const facts = [
+      o.address ? `<b>${esc(o.address)}</b>` : `${esc(o.borough || 'NYC area')}${o.miles ? ` · about ${o.miles} mi from you` : ''}`,
+      o.start ? `${when(o.start)}${o.end ? ' to ' + when(o.end).split(', ').pop() : ''}` : 'Date to agree',
+      o.pay ? `Pay ${money(o.pay)}` : '',
+      o.priority !== 'routine' ? `<span class="pill warn">${esc(o.priority)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    const crew = (o.crew || []).length ? `<p class="small muted">Crew: ${o.crew.map((c: Row) => `${esc(c.name)} (${c.role}${c.status === 'offered' ? ', invited' : ''})`).join(', ')}</p>` : '';
+    let acts = '';
+    if (o.status === 'offered') acts = `<div class="row"><button class="btn sm" data-accept="${o.id}">Accept</button><button class="btn sm ghost" data-decline="${o.id}">Decline</button></div>`;
+    if (o.status === 'accepted' && o.role === 'lead') acts = `<div class="row"><button class="btn sm ghost" data-helpers="${o.id}">Bring in a helper</button><button class="btn sm" data-done="${o.id}">Report done</button></div><div data-panel="${o.id}"></div>`;
+    return `<div class="card stack" style="gap:8px">${head}<p class="small">${facts}</p>
+      ${o.description ? `<p class="small muted" style="white-space:pre-wrap">${esc(o.description)}</p>` : ''}
+      ${o.access ? `<p class="small"><b>Access:</b> ${esc(o.access)}</p>` : ''}
+      ${o.note ? `<p class="small"><b>From the lead pro:</b> ${esc(o.note)}</p>` : ''}${crew}${acts}</div>`;
+  }
+
+  function render(me: Row) {
+    const needsSign = me.kind === 'partner' && !me.agreement_at;
+    const open = me.offers.filter((o: Row) => o.status === 'offered' || o.status === 'accepted');
+    const past = me.offers.filter((o: Row) => o.status === 'done' || o.status === 'declined');
+    root.innerHTML = `<header class="sec-head" style="margin-bottom:18px">
+        <p class="eyebrow">EZTek pro${me.rating ? ` · ★ ${me.rating} from ${me.reviews} review${me.reviews === 1 ? '' : 's'}` : ''}</p>
+        <h1 style="font-size:clamp(1.7rem,3.2vw,2.3rem)">${esc(me.company || me.name)}</h1>
+        <p class="muted small">Jobs within ${me.radius_miles} miles of ${esc(me.base_address || 'your base')}. Questions: ${call}.</p></header>
+      ${needsSign ? `<form class="card stack" data-sign style="max-width:820px">
+        <h2 style="font-size:1.2rem">Partner agreement</h2>
+        <ol class="small stack" style="gap:6px;padding-left:18px;margin:0">${AGREEMENT.map(([t, d]) => `<li><b>${esc(t)}.</b> ${esc(d)}</li>`).join('')}</ol>
+        <div class="field"><label for="sg">Your full name, for your company</label><input id="sg" name="sig" type="text" autocomplete="name" required maxlength="120"></div>
+        <label class="small"><input type="checkbox" required> I agree to this partner agreement.</label>
+        <p class="err" data-err></p><div><button class="btn">Sign and see jobs</button></div></form>` : ''}
+      <div class="stack" style="gap:12px;max-width:820px">${open.length ? open.map((o: Row) => card(o)).join('') : '<p class="card muted">No open jobs right now. New ones nearby show up here; we also call you.</p>'}</div>
+      ${past.length ? `<h2 style="font-size:1.1rem;margin-top:24px">Earlier</h2><div class="stack" style="gap:8px;max-width:820px">${past.map((o: Row) => card(o)).join('')}</div>` : ''}
+      <p class="err" data-msg style="margin-top:12px"></p>`;
+  }
+
+  async function act(fn: string, args: Record<string, unknown>) {
+    const msg = root.querySelector<HTMLElement>('[data-msg]');
+    try { render(await rpc(fn, args)); } catch (x) { if (msg) msg.textContent = (x as Error).message; else alert((x as Error).message); }
+  }
+
+  root.addEventListener('click', async (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('button');
+    if (!b) return;
+    const d = b.dataset;
+    if (d.accept) return act('pro_respond', { p_offer: d.accept, p_accept: true });
+    if (d.decline) return act('pro_respond', { p_offer: d.decline, p_accept: false });
+    if (d.helpers) {
+      const panel = root.querySelector<HTMLElement>(`[data-panel="${d.helpers}"]`)!;
+      const list: Row[] = await rpc('pro_helpers', { p_offer: d.helpers }).catch(() => []);
+      panel.innerHTML = list.length
+        ? `<form class="row" style="align-items:end" data-invite="${d.helpers}"><div class="field"><label class="sr" for="hp">Pro</label><select id="hp" name="pro">${list.map((h) => `<option value="${h.pro_id}">${esc(h.company || h.name)} · ${h.miles} mi</option>`).join('')}</select></div><div class="field"><label class="sr" for="hn">Note</label><input id="hn" name="note" type="text" placeholder="What you need, when"></div><button class="btn sm">Invite</button></form>`
+        : `<p class="small muted">No other approved pros near this building yet. Call ${call} and we will find someone.</p>`;
+    }
+    if (d.done) {
+      const panel = root.querySelector<HTMLElement>(`[data-panel="${d.done}"]`)!;
+      panel.innerHTML = `<form class="row" style="align-items:end" data-finish="${d.done}"><div class="field"><label class="sr" for="dn">What was done</label><input id="dn" name="note" type="text" placeholder="What was done, anything left open"></div><button class="btn sm">Send</button></form>`;
+    }
+  });
+  root.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target as HTMLFormElement;
+    const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement)?.value || '').trim();
+    if (f.dataset.sign !== undefined) return act('pro_sign', { p_name: v('sig') });
+    if (f.dataset.invite) return act('pro_invite', { p_offer: f.dataset.invite, p_helper: v('pro'), p_note: v('note') });
+    if (f.dataset.finish) return act('pro_done', { p_offer: f.dataset.finish, p_note: v('note') });
+  });
+
+  (async () => {
+    if (!SB_URL || !SB_KEY) { root.innerHTML = `<p class="note">This page works once the site is connected. Call ${call}.</p>`; return; }
+    if (!/^[0-9a-f-]{36}$/i.test(token)) { root.innerHTML = `<h1 style="font-size:1.8rem">Link not found</h1><p class="muted">Use the link EZTek sent you, or call ${call}.</p>`; return; }
+    try {
+      const me = await rpc('pro_home', {});
+      if (!me) { root.innerHTML = `<h1 style="font-size:1.8rem">Link not active</h1><p class="muted">Your application may still be in review. Call ${call}.</p>`; return; }
+      render(me);
+    } catch { root.innerHTML = `<p class="note">Could not load your jobs. Refresh, or call ${call}.</p>`; }
+  })();
+</script>

@@ -32,7 +32,7 @@ import { u } from '../../lib/url';
     const toast = (m: string) => { toastEl.textContent = m; toastEl.hidden = false; clearTimeout(toastT); toastT = window.setTimeout(() => (toastEl.hidden = true), 3000); };
 
     type Row = Record<string, any>;
-    const S = { tab: 'leads', leadStatus: 'new', jobStage: 'open', sel: '' as string, staff: [] as Row[], me: null as Row | null, head: '', proStatus: 'applied' };
+    const S = { tab: 'leads', leadStatus: 'new', jobStage: 'open', sel: '' as string, staff: [] as Row[], me: null as Row | null, head: '', proStatus: 'applied', proTrade: '', prStatus: 'new', prBorough: 'all', prMin: 250000 };
     const LEAD_ST = ['new', 'contacted', 'survey', 'proposal', 'won', 'lost', 'spam'];
     const JOB_ST = ['received', 'scheduled', 'assigned', 'on_site', 'completed', 'cancelled'];
     const label = (s: string) => s.replace('_', ' ').replace(/^./, (c) => c.toUpperCase());
@@ -101,11 +101,11 @@ import { u } from '../../lib/url';
       busy(app, true);
       const [head, body] = await Promise.all([
         counters || !S.head ? kpis() : S.head,
-        S.tab === 'leads' ? leadsView() : S.tab === 'jobs' ? jobsView() : S.tab === 'pros' ? prosView() : clientsView(),
+        S.tab === 'leads' ? leadsView() : S.tab === 'jobs' ? jobsView() : S.tab === 'pros' ? prosView() : S.tab === 'prospects' ? prospectsView() : clientsView(),
       ]);
       if (my !== ticket) return;
       S.head = head;
-      const tabs = `<div class="tabs" role="tablist">${[['leads', 'Leads'], ['jobs', 'Jobs'], ['clients', 'Clients'], ['pros', 'Pros']].map(([id, n]) => `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}">${n}</button>`).join('')}</div>`;
+      const tabs = `<div class="tabs" role="tablist">${[['leads', 'Leads'], ['jobs', 'Jobs'], ['clients', 'Clients'], ['pros', 'Pros'], ['prospects', 'Prospects']].map(([id, n]) => `<button role="tab" data-tab="${id}" aria-selected="${S.tab === id}">${n}</button>`).join('')}</div>`;
       app.innerHTML = head + tabs + body;
       busy(app, false);
     }
@@ -187,7 +187,7 @@ import { u } from '../../lib/url';
     }
 
     async function jobDetail(j: Row) {
-      const [notes, proposals] = await Promise.all([notesFor('job_id', j.id), proposalsFor(j)]);
+      const [notes, proposals, crew] = await Promise.all([notesFor('job_id', j.id), proposalsFor(j), crewFor(j)]);
       return `<div class="card detail">
         <div class="row sp"><h2 style="font-size:1.3rem">${esc(j.number)} · ${esc(j.title)}</h2>${pri(j.priority)}</div>
         <p class="muted small">${esc(j.organizations?.name || 'No client')}${j.sites ? ' · ' + esc(j.sites.name) + ', ' + esc(j.sites.address) : ''}</p>
@@ -203,7 +203,33 @@ import { u } from '../../lib/url';
         </div>
         ${j.description ? `<dl class="kv"><dt>Details</dt><dd>${esc(j.description)}</dd></dl>` : ''}
         <h3>Proposals</h3>${proposals}
+        <h3>Pros on this job</h3>${crew}
+        ${reviewLink(j)}
         <h3>Notes</h3>${notes}</div>`;
+    }
+
+    // Pros: the job goes to the nearest approved pros who cover the building; the first to accept on
+    // their link takes it and can bring in helpers. Staff text them the link.
+    const siteBase = () => `${location.origin}${location.pathname.replace(/admin\/(index\.html)?$/, '')}`;
+    const OFFER_PILL: Record<string, string> = { offered: 'info', accepted: 'ok', done: 'ok', declined: 'mute', withdrawn: 'mute' };
+    async function crewFor(j: Row) {
+      const { data } = await sb!.from('job_offers').select('id,role,status,pay,miles,done_note,pros(name,company,phone,token)').eq('job_id', j.id).order('offered_at');
+      const list = (data || []).map((o: Row) => {
+        const link = `${siteBase()}pro/?t=${o.pros.token}`;
+        const text = `EZTek: job ${j.number}, ${j.title}${o.miles ? `, about ${o.miles} mi from you` : ''}. Take it or pass here: ${link}`;
+        return `<div class="note-item"><small>${esc(o.pros.company || o.pros.name)} · <span class="pill ${OFFER_PILL[o.status] || 'mute'}">${label(o.status)}</span>${o.role === 'helper' ? ' · helper' : ''}${o.miles ? ` · ${o.miles} mi` : ''}${o.pay ? ` · pay ${money(o.pay)}` : ''}</small>${o.done_note ? esc(o.done_note) : ''}
+          ${o.status === 'offered' ? `<div class="row" style="margin-top:6px"><a class="btn sm ghost" href="sms:${esc(o.pros.phone)}?&body=${encodeURIComponent(text)}">Text the link</a><button class="btn sm ghost" data-copy="${esc(link)}">Copy link</button></div>` : ''}</div>`;
+      }).join('');
+      const taken = (data || []).some((o: Row) => o.role === 'lead' && ['accepted', 'done'].includes(o.status));
+      return `<div class="note-list">${list || '<p class="small muted">Not offered to pros yet.</p>'}</div>
+        ${taken || ['completed', 'cancelled'].includes(j.stage) ? '' : `<form class="inline" data-offer><div class="field"><label for="op">Pay to the pro, $ <span class="muted">(partners: 70% of labor)</span></label><input id="op" name="pay" type="number" min="0" step="1"></div><button class="btn sm">${list ? 'Offer to more pros nearby' : 'Offer to the 3 nearest pros'}</button></form>`}`;
+    }
+    // once the job is completed, the client rates it on /review/
+    function reviewLink(j: Row) {
+      if (j.stage !== 'completed') return '';
+      const link = `${siteBase()}review/?t=${j.review_token}`;
+      const mail = j.organizations?.billing_email ? `mailto:${encodeURIComponent(j.organizations.billing_email)}?subject=${encodeURIComponent(`How did we do? ${j.number}`)}&body=${encodeURIComponent(`Hello,\n\nThank you for working with EZTek. How did ${j.title} go? It takes a minute:\n${link}\n\nEZTek Solutions`)}` : '';
+      return `<h3>Review</h3><div class="row"><button class="btn sm ghost" data-copy="${esc(link)}">Copy review link</button>${mail ? `<a class="btn sm ghost" href="${esc(mail)}">Email it</a>` : ''}</div>`;
     }
 
     // Proposals: written here (or drafted by Claude), sent as a link; the client accepts and pays on /p/
@@ -289,22 +315,55 @@ import { u } from '../../lib/url';
     async function prosView() {
       let q = sb!.from('pros').select('*').order('created_at', { ascending: false }).limit(200);
       if (S.proStatus !== 'all') q = q.eq('status', S.proStatus);
+      if (S.proTrade) q = q.contains('trades', [S.proTrade]);
       const { data } = await q;
       const list = data || [];
-      const filters = `<div class="chipf">${[...PRO_ST, 'all'].map((s) => `<button data-ps="${s}" aria-pressed="${S.proStatus === s}">${label(s)}</button>`).join('')}</div>`;
+      const filters = `<div class="chipf">${[...PRO_ST, 'all'].map((s) => `<button data-ps="${s}" aria-pressed="${S.proStatus === s}">${label(s)}</button>`).join('')}
+        <label class="sr" for="ptr">Installs</label><select id="ptr" data-pro-trade><option value="">Any work</option>${SERVICES.map((v) => `<option value="${v}"${S.proTrade === v ? ' selected' : ''}>${label(v.replace(/-/g, ' '))}</option>`).join('')}</select></div>`;
       const rowsHtml = list.length ? list.map((p) => `<button data-pro="${p.id}" aria-current="${S.sel === p.id}">
         <span class="t">${esc(p.name)}${p.company ? ' · ' + esc(p.company) : ''}</span><span class="small muted">${ago(p.created_at)}</span>
         <span class="m"><span class="pill ${p.kind === 'partner' ? 'info' : 'mute'}">${p.kind === 'partner' ? 'Partner company' : 'Technician'}</span>${p.alarm_license ? '<span class="pill ok">Alarm license</span>' : ''}${esc((p.boroughs || []).join(', '))}</span></button>`).join('') : '<p class="empty">No applications here.</p>';
       const cur = list.find((p) => p.id === S.sel);
+      const link = cur ? `${siteBase()}pro/?t=${cur.token}` : '';
       const detail = cur ? `<div class="card detail">
         <div class="row sp"><h2 style="font-size:1.3rem">${esc(cur.name)}</h2><span class="pill mute">${label(cur.status)}</span></div>
         <div class="row"><a class="btn sm" href="tel:${esc(cur.phone)}">Call</a>${cur.email ? `<a class="btn sm ghost" href="mailto:${esc(cur.email)}">Email</a>` : ''}
           ${['approved', 'paused', 'rejected'].filter((s) => s !== cur.status).map((s) => `<button class="btn sm ghost" data-pro-set="${s}">${s === 'approved' ? 'Approve' : s === 'paused' ? 'Pause' : 'Reject'}</button>`).join('')}</div>
-        <dl class="kv">${[['Works as', cur.kind === 'partner' ? 'Partner company' : 'Technician (W-2)'], ['Company', cur.company], ['Phone', cur.phone], ['Email', cur.email], ['Years', cur.years], ['Alarm license (NYS 6-D)', cur.alarm_license], ['Home improvement license (NYC)', cur.hic_license], ['Insured', cur.kind === 'partner' ? (cur.insured ? 'Says yes: ask for the certificate' : 'No') : ''], ['Installs', (cur.trades || []).map((t: string) => label(t.replace(/-/g, ' '))).join(', ')], ['Areas', (cur.boroughs || []).join(', ')], ['About', cur.about]].filter((r) => r[1] !== null && r[1] !== '' && r[1] !== undefined).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-        <p class="small muted">Check the alarm license on the NYS Department of State license search before approving.</p>
+        <dl class="kv">${[['Works as', cur.kind === 'partner' ? 'Partner company' : 'Technician (W-2)'], ['Company', cur.company], ['Phone', cur.phone], ['Email', cur.email], ['Years', cur.years], ['Alarm license (NYS 6-D)', cur.alarm_license], ['Home improvement license (NYC)', cur.hic_license], ['Insured', cur.kind === 'partner' ? (cur.insured ? 'Says yes: ask for the certificate' : 'No') : ''], ['Installs', (cur.trades || []).map((t: string) => label(t.replace(/-/g, ' '))).join(', ')], ['Areas', (cur.boroughs || []).join(', ')],
+          ['Works from', cur.base_address ? `${cur.base_address} · up to ${cur.radius_miles} mi${cur.lat ? '' : ' (not located: jobs cannot reach them)'}` : ''], ['Partner agreement', cur.kind === 'partner' ? (cur.agreement_at ? `Signed by ${cur.agreement_name}, ${when(cur.agreement_at)}` : 'Not signed yet: they sign on their link') : ''], ['About', cur.about]].filter((r) => r[1] !== null && r[1] !== '' && r[1] !== undefined).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        ${cur.status === 'approved' ? `<div class="row"><span class="small">Their link for jobs:</span><button class="btn sm ghost" data-copy="${esc(link)}">Copy link</button><a class="btn sm ghost" href="sms:${esc(cur.phone)}?&body=${encodeURIComponent(`Welcome to EZTek. Jobs near you show up here; keep this link private: ${link}`)}">Text it</a></div>` : '<p class="small muted">Check the alarm license on the NYS Department of State license search before approving. Once approved, they get a private link for jobs.</p>'}
         <form class="stack" data-pro-notes style="gap:8px"><div class="field"><label for="pn">Staff notes</label><textarea id="pn" name="notes" maxlength="3000" style="min-height:80px">${esc(cur.staff_notes || '')}</textarea></div><div><button class="btn sm ghost">Save notes</button></div></form>
       </div>` : '<p class="empty card">Pick an application.</p>';
       return filters + `<div class="cols"><div class="rows">${rowsHtml}</div><div id="pane">${detail}</div></div>`;
+    }
+
+    // Prospects: new buildings and large alterations from NYC permits (prospects function). Staff
+    // decide whom to reach out to; one click makes a lead. Fresh permits are pulled when the tab opens.
+    const PR_ST = ['new', 'contacted', 'lead', 'skip'];
+    let prospectsPulled = 0;
+    async function prospectsView() {
+      if (Date.now() - prospectsPulled > 3 * 3600e3) {
+        prospectsPulled = Date.now();
+        sb!.functions.invoke('prospects', { body: {} }).then(({ data }) => { if (data?.added && S.tab === 'prospects') { toast(`${data.added} new permits`); render(false); } });
+      }
+      let q = sb!.from('prospects').select('*').eq('status', S.prStatus).gte('cost', S.prMin).order('filed_on', { ascending: false }).limit(150);
+      if (S.prBorough !== 'all') q = q.eq('borough', S.prBorough);
+      const { data } = await q;
+      const filters = `<div class="chipf">${PR_ST.map((s) => `<button data-prs="${s}" aria-pressed="${S.prStatus === s}">${label(s)}</button>`).join('')}
+        <label class="sr" for="prb">Borough</label><select id="prb" data-pr-borough>${['all', 'Brooklyn', 'Manhattan', 'Queens', 'Bronx', 'Staten Island'].map((b) => `<option value="${b}"${S.prBorough === b ? ' selected' : ''}>${b === 'all' ? 'All boroughs' : b}</option>`).join('')}</select>
+        <label class="sr" for="prm">Project size</label><select id="prm" data-pr-min>${([[250000, '$250k+'], [1000000, '$1M+'], [5000000, '$5M+']] as [number, string][]).map(([v, n]) => `<option value="${v}"${S.prMin === v ? ' selected' : ''}>${n}</option>`).join('')}</select></div>`;
+      const cards = (data || []).map((x: Row) => {
+        const who = x.owner_business || x.applicant_business || '';
+        const look = `https://www.google.com/search?q=${encodeURIComponent(`${who} ${x.address} ${x.borough || ''} NY`)}`;
+        return `<div class="card stack" style="gap:8px;align-content:start"><div class="row sp"><b>${esc(x.address || 'Address not given')}</b><span class="small muted">${esc(x.borough || '')}</span></div>
+          <p class="small">${esc(x.job_type || '')}${x.cost ? ` · ${money(x.cost).replace(/\.00$/, '')}` : ''}${x.units ? ` · ${x.units} units` : ''}${x.filed_on ? ` · filed ${esc(x.filed_on)}` : ''}</p>
+          <p class="small muted">${x.owner_business ? `Owner: ${esc(x.owner_business)}` : ''}${x.applicant_business ? `${x.owner_business ? ' · ' : ''}Architect/engineer: ${esc(x.applicant_business)}` : ''}</p>
+          ${x.description ? `<p class="small muted">${esc(x.description.slice(0, 220))}${x.description.length > 220 ? '…' : ''}</p>` : ''}
+          <div class="row"><a class="btn sm ghost" href="${esc(look)}" target="_blank" rel="noopener">Look up</a>
+            ${x.status === 'lead' ? '<span class="pill ok">Lead</span>' : `<button class="btn sm" data-pr-lead="${x.id}">Make lead</button>${x.status === 'new' ? `<button class="btn sm ghost" data-pr-set="contacted" data-id="${x.id}">Contacted</button>` : ''}${x.status !== 'skip' ? `<button class="btn sm ghost" data-pr-set="skip" data-id="${x.id}">Skip</button>` : ''}`}</div></div>`;
+      }).join('');
+      return filters + `<p class="small muted" style="margin:-4px 0 12px">New buildings and large alterations filed with NYC Buildings in the last 30 days. Reach out to the owner or the architect; nothing is sent automatically.</p>`
+        + (cards ? `<div class="grid g3">${cards}</div>` : '<p class="empty card">Nothing here. New permits arrive daily.</p>');
     }
 
     // Clients ---------------------------------------------------------------
@@ -339,6 +398,18 @@ import { u } from '../../lib/url';
       if (d.ls) { press('[data-ls]', 'aria-pressed'); S.leadStatus = d.ls; S.sel = ''; return render(false); }
       if (d.js) { press('[data-js]', 'aria-pressed'); S.jobStage = d.js; S.sel = ''; return render(false); }
       if (d.ps) { press('[data-ps]', 'aria-pressed'); S.proStatus = d.ps; S.sel = ''; return render(false); }
+      if (d.prs) { press('[data-prs]', 'aria-pressed'); S.prStatus = d.prs; return render(false); }
+      if (d.prLead) {
+        const { error } = await sb!.rpc('prospect_to_lead', { p_prospect: d.prLead });
+        if (error) return toast(error.message);
+        toast('Lead created: find it under Leads'); return render();
+      }
+      if (d.prSet) {
+        const { error } = await sb!.from('prospects').update({ status: d.prSet }).eq('id', d.id!);
+        if (error) return toast(error.message);
+        return render(false);
+      }
+      if (d.copy) { await navigator.clipboard.writeText(d.copy).catch(() => {}); return toast('Link copied'); }
       if (d.pro) { S.sel = d.pro; return render(false); }
       if (d.proSet) {
         const { error } = await sb!.from('pros').update({ status: d.proSet }).eq('id', S.sel);
@@ -384,6 +455,9 @@ import { u } from '../../lib/url';
       const t = e.target as HTMLInputElement;
       const d = t.dataset;
       let res;
+      if (d.proTrade !== undefined) { S.proTrade = t.value; S.sel = ''; return render(false); }
+      if (d.prBorough !== undefined) { S.prBorough = t.value; return render(false); }
+      if (d.prMin !== undefined) { S.prMin = Number(t.value); return render(false); }
       if (d.leadStatus) res = await sb!.from('leads').update({ status: t.value }).eq('id', d.leadStatus);
       else if (d.leadOwner) res = await sb!.from('leads').update({ assigned_to: t.value || null }).eq('id', d.leadOwner);
       else if (d.leadNext) res = await sb!.from('leads').update({ next_action_at: t.value ? new Date(t.value).toISOString() : null }).eq('id', d.leadNext);
@@ -410,6 +484,17 @@ import { u } from '../../lib/url';
         const { data, error } = await sb!.functions.invoke('invite-member', { body: { org_id: f.dataset.invite, email: v('email'), role: v('role') } });
         if (error || data?.error) return toast(data?.error || 'Invitations need the invite-member function deployed (docs/ops.md).');
         toast('Invitation sent'); return render();
+      }
+      if (f.dataset.offer !== undefined) {
+        e.preventDefault();
+        const btn = f.querySelector('button')!;
+        btn.disabled = true;
+        const addr = rows.find((r) => r.id === S.sel)?.sites?.address;
+        const place = addr ? await travelFor(addr) : null;
+        const { data, error } = await sb!.rpc('offer_job', { p_job: S.sel, p_lat: place?.lat ?? null, p_lng: place?.lng ?? null, p_count: 3, p_pay: v('pay') ? Number(v('pay')) : null });
+        btn.disabled = false;
+        if (error) return toast(error.message.includes('no location') ? 'The building address could not be located. Fix it under Clients.' : error.message);
+        toast(data?.length ? `Offered to ${data.length}. Text them the link.` : 'No approved pros cover this building yet.'); return pick(S.sel);
       }
       if (f.dataset.proNotes !== undefined) {
         e.preventDefault();
