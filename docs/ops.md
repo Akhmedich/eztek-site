@@ -25,6 +25,8 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `portal_summary` (view) | Per client: open requests, systems needing attention, next visit, balance due. |
 | `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. A lead from a QR sticker goes straight to that client's building and system. |
 | `qr_label(qr)` | Name of the system behind a sticker, for the public report page. |
+| `proposals` | Offers after a survey: options with line items, deposit %, validity, suggested care plan. Status draft > sent > viewed > accepted (or expired, declined); deposit none > pending > processing (bank payment on its way) > paid. A sent proposal cannot be edited: write a new one. |
+| `proposal_by_token`, `accept_proposal` | What the client's link may do without an account: read that one proposal, accept one option by typing their name. Accepting marks the lead won and leaves a note the client sees. |
 | Storage `lead-files` | Photos and plans attached to a quote request, in a private bucket: `lead-files/<lead id>/`. Only staff can open them (in the lead in `/admin/`). Up to 10 files per request, 5 MB each; the whole site takes at most 20 uploads an hour and 40 a day (at worst 200 MB a day of the free 1 GB). Files cannot be removed through the API: clear old ones now and then in Supabase > Storage. Photos are shrunk in the browser first. |
 
 ## Pages
@@ -32,6 +34,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 - `/admin/stickers/?site=…` printable QR stickers (2 x 2 in) for every system in a building.
 - `/portal/` clients: overview, requests with progress and messages, buildings and systems, care plans and invoices.
 - `/r/?q=…` the page behind a sticker: anyone in the building reports a problem; it arrives linked to the system.
+- `/p/?t=…` the client's proposal: compare options, accept by typing a name, pay the deposit by card or bank (ACH).
 
 ## Server functions (`supabase/functions/`)
 | Function | What |
@@ -40,9 +43,10 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `billing-portal` | Stripe billing portal: cards, ACH bank accounts, autopay, invoices, cancel. |
 | `stripe-webhook` | Updates plan status per building and the invoice list from Stripe events. |
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
+| `proposal-checkout` | Stripe Checkout for the deposit on an accepted proposal; Stripe issues the invoice, so it shows in the portal. Deployed without JWT check: the proposal's secret link is the authorization. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 56 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 82 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
@@ -67,12 +71,21 @@ Re-run the deploy (Actions > Build and deploy > Run workflow) after changing var
 1. **Stripe account** for EZTek at stripe.com (business details, bank account for payouts). Turn on cards and ACH Direct Debit (Settings > Payment methods).
 2. **Products.** Create two monthly prices: Care plan Essential and Care plan Priority (amounts from `src/data/plans.ts` once the real prices are set). Managed stays a custom subscription that staff create in Stripe for each building.
 3. **Billing portal.** Settings > Billing > Customer portal: allow updating payment methods, viewing invoices, switching between the two prices, and canceling at period end.
-4. **Functions.** Ask Claude to deploy `billing-checkout`, `billing-portal`, `stripe-webhook` and `invite-member` through the `eztek-ops` connector, or run `npx supabase functions deploy` yourself.
+4. **Functions.** Ask Claude to deploy `billing-checkout`, `billing-portal`, `stripe-webhook`, `invite-member` and `proposal-checkout` through the `eztek-ops` connector, or run `npx supabase functions deploy` yourself.
 5. **Webhook.** Stripe > Developers > Webhooks > add endpoint `https://<project ref>.supabase.co/functions/v1/stripe-webhook` with the events listed at the top of `supabase/functions/stripe-webhook/index.ts`.
 6. **Secrets** (you enter them; Claude never handles keys). In Supabase: Edge Functions > Secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ESSENTIAL`, `STRIPE_PRICE_PRIORITY`, `PORTAL_URL` = `https://akhmedich.github.io/eztek-site/portal/`.
 7. **Test first.** Do all of the above in Stripe test mode, pay with Stripe's test card, check the plan turns active in `/admin/` and the invoice shows in the portal. Then repeat with live keys.
 
 Until this is done, the portal's billing buttons say online billing is not set up and ask the client to call.
+
+## Proposals: from survey to deposit
+1. After the survey, open the job in `/admin/` > Jobs and press **New proposal** (or ask Claude: "draft a proposal for EZ-2301 from the survey notes"; Claude saves it as a draft for you to check).
+2. Write the options as plain text: `## Name` starts an option (add `*` for the recommended one), `> text` is its short summary, then one `item | qty | unit price` line per item. Set the deposit % (50 by default), the date it is valid until (30 days by default) and, if you want, a care plan to suggest.
+3. **Mark sent**, then **Email link** (opens your email with the client's address and the link) or **Copy client link** for a text message. The lead moves to Proposal.
+4. The client opens the link, compares the options, accepts one by typing their name and pays the deposit by card or bank. You see Viewed, then Accepted with the amount, then Deposit paid; the lead is marked Won.
+5. Until Stripe is set up, the client can still accept; the page says you will call to take the deposit.
+
+Before taking deposits from homeowners, check New York's rules for home improvement deposits with EZTek's lawyer (`docs/pricing.md`).
 
 ## Website assistant (owner, about 10 minutes)
 A chat button on every public page ("Ask EZTek"). Visitors type or speak (Chrome, Edge, Safari), and the assistant answers out loud if they turn voice on. It answers only from confirmed facts: `npm run assistant:knowledge` builds its reference from `src/data` and leaves out every PLACEHOLDER value (prices, hours, licenses, ratings), so it never quotes them; for prices it sends people to `/quote/`. When a visitor wants a call back, it repeats the details, asks them to confirm and saves the request like a website form: a lead in EZTek Ops with `source.channel = assistant`, plus the usual email copy.

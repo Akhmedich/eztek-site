@@ -422,3 +422,7 @@ verify_jwt = false
 # Website visitors call this with the publishable key (not a JWT); it checks the site origin and rate-limits
 [functions.assistant]
 verify_jwt = false
+
+# Clients pay the deposit from the proposal link without signing in; the proposal token authorizes it
+[functions.proposal-checkout]
+verify_jwt = false
