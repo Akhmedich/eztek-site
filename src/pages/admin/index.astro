@@ -46,7 +46,7 @@ import { u } from '../../lib/url';
       const { data: { session } } = await sb!.auth.getSession();
       sb!.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') location.reload(); });
       if (!session) return signIn();
-      const { data: me } = await sb!.from('staff').select('*').eq('user_id', session.user.id).maybeSingle();
+      const { data: me } = await sb!.from('staff').select('user_id,name,role,active').eq('user_id', session.user.id).maybeSingle();
       who.innerHTML = `${esc(session.user.email)} <button class="link" id="out">Sign out</button>`;
       document.getElementById('out')!.onclick = () => sb!.auth.signOut();
       if (!me) {

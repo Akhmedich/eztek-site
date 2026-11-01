@@ -10,9 +10,11 @@ grant execute on function public.qr_label(uuid) to anon;
 
 -- Signed-in users (staff and clients); policies limit each to their own rows
 grant select, insert, update on
-  public.staff, public.organizations, public.org_members, public.sites, public.systems,
+  public.organizations, public.org_members, public.sites, public.systems,
   public.leads, public.jobs, public.notes
 to authenticated;
+-- Policies pick rows, not columns: clients may see their technician's row, so the phone stays unreadable
+grant select (user_id, name, role, active, created_at), insert, update on public.staff to authenticated;
 grant select on public.invoices, public.ops_today, public.portal_summary to authenticated;
 grant usage on sequence public.job_number_seq to authenticated;
 grant execute on function public.is_staff(), public.my_orgs(), public.convert_lead(uuid, text), public.qr_label(uuid) to authenticated;

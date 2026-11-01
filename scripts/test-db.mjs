@@ -58,6 +58,10 @@ await rejects(db.query(`select * from public.organizations`), 'anon has no acces
 await rejects(db.query(`insert into public.leads (ref, kind, name) values ('Q-y', 'quote', repeat('a', 300))`), 'over-long name is rejected');
 await rejects(db.query('truncate public.leads'), 'anon cannot truncate tables');
 await rejects(db.query('select public.is_staff()'), 'anon cannot call staff helpers');
+await as('');
+await db.exec('create table public.made_later (id int)');
+await as('anon');
+await rejects(db.query('truncate public.made_later'), 'tables made later do not hand anon TRUNCATE either');
 
 // staff
 await as('authenticated', STAFF);
@@ -108,10 +112,14 @@ await as('anon');
 ok((await one(`select public.qr_label($1) as l`, [sys.qr])).l === 'Lobby camera 4 · 100 Shore Rd, Brooklyn', 'QR page shows the system name');
 await db.query(`insert into public.leads (ref, kind, urgency, name, phone, message, source) values ('S-QR-1', 'service', 'urgent', 'Tenant 4B', '7185550111', 'Camera dark', $1)`, [JSON.stringify({ qr: sys.qr })]);
 await db.query(`insert into public.leads (ref, kind, name, system_id) values ('S-QR-2', 'service', 'Spoofer', $1)`, [otherSys.id]);
+await db.query(`insert into public.leads (ref, kind, name, source) values ('S-QR-3', 'service', 'Broken link', $1)`, [JSON.stringify({ qr: '-'.repeat(36) })]);
+ok(true, 'a malformed sticker id does not lose the lead');
+await db.query(`insert into public.leads (ref, kind, name, source) values ('S-QR-4', 'service', 'Caps', $1)`, [JSON.stringify({ qr: sys.qr.toUpperCase() })]);
 
 await as('authenticated', STAFF);
 ok((await one(`select system_id from public.leads where ref = 'S-QR-1'`)).system_id === sys.id, 'QR lead is linked to the system');
 ok((await one(`select system_id from public.leads where ref = 'S-QR-2'`)).system_id === null, 'website cannot link a lead to a system directly');
+ok((await one(`select system_id from public.leads where ref = 'S-QR-4'`)).system_id === sys.id, 'an upper-case sticker id still links the system');
 const qrJobId = (await one(`select public.convert_lead((select id from public.leads where ref = 'S-QR-1'), 'service') as id`)).id;
 const qrJob = await one('select site_id, org_id, system_id from public.jobs where id = $1', [qrJobId]);
 await db.query(`update public.jobs set scheduled_start = now() + interval '1 day', stage = 'scheduled' where id = $1`, [qrJobId]);
@@ -125,6 +133,7 @@ await as('authenticated', STAFF);
 await rejects(db.query(`update public.invoices set status = 'paid'`), 'staff cannot edit invoices by hand');
 await as('authenticated', CLIENT);
 ok((await db.query('select name from public.staff')).rows.map((r) => r.name).join() === 'Mansur', 'client sees the name of their technician');
+await rejects(db.query('select phone from public.staff'), "client cannot read the technician's phone");
 const sum = await one('select * from public.portal_summary');
 ok(Number(sum.balance_due) === 349 && Number(sum.needs_attention) === 1 && !!sum.next_visit, 'portal summary for own organization');
 ok((await db.query('select * from public.portal_summary')).rows.length === 1, 'portal summary hides other organizations');
@@ -157,12 +166,12 @@ await db.query(`insert into public.leads (id, ref, kind, name, phone) values ($1
 await as('');
 await db.query(`insert into storage.objects (bucket_id, name) select 'lead-files', 'x/' || g from generate_series(1, 20) g`);
 await as('anon');
-await rejects(upload(FRESH, 'a.jpg'), 'site-wide cap of 30 uploads an hour');
+await rejects(upload(FRESH, 'a.jpg'), 'site-wide cap of 20 uploads an hour');
 await as('');
 await db.query(`update storage.objects set created_at = now() - interval '3 hours'`);
 await db.query(`insert into storage.objects (bucket_id, name, created_at) select 'lead-files', 'y/' || g, now() - interval '5 hours' from generate_series(1, 70) g`);
 await as('anon');
-await rejects(upload(FRESH, 'b.jpg'), 'site-wide cap of 100 uploads a day');
+await rejects(upload(FRESH, 'b.jpg'), 'site-wide cap of 40 uploads a day');
 await as('');
 await db.query(`delete from storage.objects where name like 'y/%'`);
 await as('anon');

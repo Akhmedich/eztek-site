@@ -25,7 +25,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `portal_summary` (view) | Per client: open requests, systems needing attention, next visit, balance due. |
 | `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. A lead from a QR sticker goes straight to that client's building and system. |
 | `qr_label(qr)` | Name of the system behind a sticker, for the public report page. |
-| Storage `lead-files` | Photos and plans attached to a quote request, in a private bucket: `lead-files/<lead id>/`. Only staff can open them (in the lead in `/admin/`). Up to 10 files per request, 10 MB each; the whole site takes at most 30 uploads an hour and 100 a day, which slows any abuse of the free 1 GB; a CAPTCHA is the next step if spam appears (Later). Photos are shrunk in the browser first. |
+| Storage `lead-files` | Photos and plans attached to a quote request, in a private bucket: `lead-files/<lead id>/`. Only staff can open them (in the lead in `/admin/`). Up to 10 files per request, 5 MB each; the whole site takes at most 20 uploads an hour and 40 a day (at worst 200 MB a day of the free 1 GB). Files cannot be removed through the API: clear old ones now and then in Supabase > Storage. Photos are shrunk in the browser first. |
 
 ## Pages
 - `/admin/` staff: leads, jobs, clients; add systems to a building, invite client users, open QR report pages.
@@ -42,7 +42,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 52 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 56 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.

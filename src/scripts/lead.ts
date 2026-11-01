@@ -70,7 +70,7 @@ async function toDb(row: Record<string, unknown>) {
 // Photos and plans: images are shrunk to 2000 px JPEG first (phone photos are 3-8 MB)
 export const FILE_TYPES = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
 export const MAX_FILES = 10;
-export const MAX_FILE_MB = 10;
+export const MAX_FILE_MB = 5; // bucket limit in 20261101090000_lead_files.sql
 export const canAttach = !!(SB_URL && SB_KEY); // files go only to Supabase, never by email
 // Windows browsers often give HEIC photos no type; the bucket only takes known types
 const typeOf = (f: File) => f.type || (/\.hei[cf]$/i.test(f.name) ? 'image/heic' : /\.pdf$/i.test(f.name) ? 'application/pdf' : '');
