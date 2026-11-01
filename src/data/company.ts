@@ -14,7 +14,7 @@ export const company = {
   serviceEmail: 'service@eztekav.com', // PLACEHOLDER
   billingEmail: 'billing@eztekav.com', // PLACEHOLDER
   address: { street: '1707 70th St', city: 'Brooklyn', region: 'NY', zip: '11204', hood: 'Bensonhurst' },
-  geo: { lat: 40.6156, lng: -73.9906 }, // PLACEHOLDER: approximate, check against Google Business Profile
+  geo: { lat: 40.6176, lng: -73.9952 }, // geocoded from the confirmed address (US Census geocoder, 2026-11-01)
   domain: 'eztekav.com',
   hours: [
     { days: 'Mon–Fri', time: '8:00 AM – 6:00 PM', spec: ['Mo', 'Tu', 'We', 'Th', 'Fr'], opens: '08:00', closes: '18:00' }, // PLACEHOLDER
@@ -23,6 +23,9 @@ export const company = {
   emergency: 'Emergency dispatch 24/7 for care plan clients', // PLACEHOLDER
   license: 'NYS DOS Security & Fire Alarm Installer License #00-000000', // PLACEHOLDER
   insurance: '$2M general liability · $5M umbrella · workers comp', // PLACEHOLDER
+  // Required on residential (home improvement) contracts, GBL § 771; shown on /p/ only when filled in
+  hicLicense: '', // PLACEHOLDER: NYC DCWP Home Improvement Contractor license number
+  insurer: '', // PLACEHOLDER: insurer of the policy covering the work, with its address and phone
   responseTime: '4 hours', // PLACEHOLDER: emergency on-site target for Managed plan
   callback: 'within one business hour', // PLACEHOLDER: how fast a new lead gets a call
   proposalDays: 3, // PLACEHOLDER: business days from survey to proposal

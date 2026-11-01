@@ -1,16 +1,20 @@
 ---
 // The client's proposal: opened from the link EZTek sends (/p/?t=<token>), no account needed.
 // The client compares the options, accepts one by typing their name, and pays the deposit on Stripe.
+// Residential jobs carry New York's home improvement contract terms (GBL § 771): dates, payment
+// schedule, lien and escrow notices, insurance, and the right to cancel within three business days.
 import Layout from '../../layouts/Layout.astro';
 import { company } from '../../data/company';
 import { PLANS } from '../../data/plans';
 import { tel, u } from '../../lib/url';
 
 const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { name: p.name, price: p.price, from: p.from }]));
+const a = company.address;
+const contractor = { name: company.name, address: `${a.street}, ${a.city}, ${a.region} ${a.zip}`, phone: company.phoneDisplay, license: company.hicLicense, insurer: company.insurer };
 ---
 <Layout title="Your proposal" description="Your EZTek proposal: options, prices and online acceptance." noindex>
   <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap prop" id="prop" aria-live="polite"
-    data-plans={JSON.stringify(plans)} data-phone={company.phoneDisplay} data-tel={tel} data-terms={u('/terms/')} data-care={u('/care-plans/')}>
+    data-plans={JSON.stringify(plans)} data-phone={company.phoneDisplay} data-tel={tel} data-terms={u('/terms/')} data-care={u('/care-plans/')} data-contractor={JSON.stringify(contractor)}>
     <p class="muted">Loading your proposal…</p>
   </div></section>
 </Layout>
@@ -21,6 +25,7 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
   const root = document.getElementById('prop')!;
   const D = root.dataset;
   const PLANS = JSON.parse(D.plans!) as Record<string, { name: string; price: number; from: boolean }>;
+  const CO = JSON.parse(D.contractor!) as { name: string; address: string; phone: string; license: string; insurer: string };
   const q = new URLSearchParams(location.search);
   const token = q.get('t') || '';
   const justPaid = q.get('paid') === '1';
@@ -31,6 +36,7 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
     number: string; title: string; intro: string | null; status: string; valid_until: string; care_plan: string | null; deposit_pct: number;
     options: Option[]; accepted_option: string | null; accepted_name: string | null; accepted_at: string | null; accepted_total: number | null;
     deposit_amount: number | null; deposit_status: string; client: string | null; site: string | null;
+    home_improvement: boolean; schedule: string | null; issued_by: string | null; sent_at: string | null; cancel_until: string | null; cancelled_at: string | null;
   };
 
   const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -38,6 +44,29 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
   const day = (iso: string) => new Date(iso.length === 10 ? iso + 'T12:00:00' : iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const call = `<a href="${esc(D.tel)}">${esc(D.phone)}</a>`;
   const show = (html: string) => { root.innerHTML = html; };
+  const when = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  // New York home improvement contract terms (GBL § 771). The lien notice is the statute's own words.
+  function contractTerms(p: Proposal, total: number | null) {
+    const dep = total ? Math.round(total * p.deposit_pct) / 100 : null;
+    const pay = total
+      ? `${p.deposit_pct ? `${money(dep!)} deposit on signing; ` : ''}${money(Math.round((total - (dep || 0)) * 100) / 100)} on substantial completion. Hourly work, if any, is billed as done.`
+      : `${p.deposit_pct ? `${p.deposit_pct}% of the option you choose on signing; the` : 'The'} balance on substantial completion.`;
+    return `<section class="card stack prop-terms">
+      <h2 style="font-size:1.2rem">Home improvement contract terms</h2>
+      <dl class="kv">
+        <dt>Contractor</dt><dd>${esc(CO.name)}, ${esc(CO.address)}, ${esc(CO.phone)}${CO.license ? `<br>NYC Home Improvement Contractor license ${esc(CO.license)}` : ''}</dd>
+        ${p.issued_by ? `<dt>Issued by</dt><dd>${esc(p.issued_by)}, for ${esc(CO.name)}${p.sent_at ? `, ${day(p.sent_at)}` : ''}</dd>` : ''}
+        <dt>Dates</dt><dd>${esc(p.schedule || 'To be agreed before work starts.')} Dates are approximate and depend on equipment delivery and building access; a completion date is not of the essence unless written here.</dd>
+        <dt>Work and materials</dt><dd>As listed in the option you accept, with makes and models where shown.</dd>
+        <dt>Payments</dt><dd>${pay}</dd>
+        ${CO.insurer ? `<dt>Insurance</dt><dd>${esc(CO.insurer)}</dd>` : ''}
+      </dl>
+      <p class="small"><b>Your payments are protected.</b> Under New York law (General Business Law § 771 and Lien Law § 71-a), ${esc(CO.name)} must deposit all payments received before the work is completed in an escrow account at a bank in New York State, or instead give you a bond, contract of indemnity or irrevocable letter of credit guaranteeing that they are returned or used for this job.</p>
+      <p class="small"><b>Any contractor, subcontractor, or materialman who provides home improvement goods or services pursuant to your home improvement contract and who is not paid may have a valid legal claim against your property known as a mechanic's lien. Any mechanic's lien filed against your property may be discharged. Payment of the agreed-upon price under the home improvement contract prior to filing of a mechanic's lien may invalidate such lien. The owner may contact an attorney to determine his rights to discharge a mechanic's lien.</b></p>
+      <p class="small"><b>Your right to cancel.</b> You may cancel this contract until midnight of the third business day after the day you sign it${p.cancel_until ? `, that is until <b>${when(p.cancel_until)}</b>` : ''}. Cancel with the button on this page, or tell us in writing: email or mail to ${esc(CO.name)}, ${esc(CO.address)}. Any deposit is refunded in full.</p>
+    </section>`;
+  }
 
   async function rpc(fn: string, args: Record<string, unknown>) {
     const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
@@ -72,16 +101,21 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
           : `<p>Deposit due now: <b>${money(p.deposit_amount || 0)}</b> (${p.deposit_pct}% of ${money(p.accepted_total || 0)}). The balance is invoiced when the work is done.</p>
              <div class="row"><button class="btn" data-pay>Pay deposit by card or bank</button></div><p class="err" data-err></p>`)
         : p.deposit_status === 'paid' ? `<p><b>Deposit received. Thank you.</b> We call you to schedule the work.</p>` : '';
+      const canCancel = p.home_improvement && p.cancel_until && new Date(p.cancel_until) > new Date();
       state = `<div class="card stack prop-done"><p class="eyebrow">Accepted</p>
-        <p>${esc(p.accepted_name)} accepted <b>${esc(chosen.name)}</b> on ${day(p.accepted_at!)}, total ${money(p.accepted_total || 0)}.</p>${pay}</div>`;
+        <p>${esc(p.accepted_name)} accepted <b>${esc(chosen.name)}</b> on ${day(p.accepted_at!)}, total ${money(p.accepted_total || 0)}.</p>${pay}
+        <div class="row no-print"><button class="btn sm ghost" data-print>Print or save this contract</button>${canCancel ? `<button class="btn sm ghost" data-cancel>Cancel this contract</button>` : ''}</div>
+        ${canCancel ? `<p class="small muted no-print">You can cancel until ${when(p.cancel_until!)}. Press Cancel twice to confirm.</p>` : ''}<p class="err" data-cancel-err></p></div>`;
     } else if (p.status === 'expired') {
       state = `<p class="note">This proposal expired on ${day(p.valid_until)}. Call ${call} and we will send an updated one.</p>`;
+    } else if (p.status === 'declined' && p.cancelled_at) {
+      state = `<p class="note">You cancelled this contract on ${day(p.cancelled_at)}.${p.deposit_status === 'paid' || p.deposit_status === 'processing' ? ' Your deposit is being refunded.' : ''} Call ${call} with any questions.</p>`;
     } else if (p.status === 'declined') {
       state = `<p class="note">This proposal was closed. Call ${call} if you would like to talk about it.</p>`;
     }
     const accept = acceptable ? `<form class="card stack prop-accept" data-accept>
         <h2 style="font-size:1.25rem">Accept this proposal</h2>
-        <p class="muted small">Pick an option above, then sign by typing your full name. ${p.deposit_pct ? `A ${p.deposit_pct}% deposit is due on acceptance, by card or bank transfer; the balance is invoiced when the work is done.` : ''}</p>
+        <p class="muted small">Pick an option above, then sign by typing your full name. ${p.deposit_pct ? `A ${p.deposit_pct}% deposit is due on acceptance, by card or bank transfer; the balance is invoiced when the work is done.` : ''}${p.home_improvement ? ' You can cancel until midnight of the third business day after signing.' : ''}</p>
         <p data-deposit class="small"></p>
         <div class="field"><label for="sig">Your full name</label><input id="sig" name="sig" type="text" autocomplete="name" required maxlength="120"></div>
         <label class="small"><input type="checkbox" name="agree" required> I accept this proposal and the <a href="${esc(D.terms)}" target="_blank" rel="noopener">terms</a>.</label>
@@ -97,6 +131,7 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
       ${state}
       <div class="prop-opts">${p.options.map((o) => optionCard(o, p, acceptable)).join('')}</div>
       ${plan ? `<p class="note" style="margin-top:16px"><span>After installation we suggest the <b>${esc(plan.name)}</b> care plan, ${plan.from ? 'from ' : ''}${money(plan.price)} a month per building: maintenance visits, faster dispatch and lower labor rates. It is optional and not part of the totals above. <a href="${esc(D.care)}">Compare plans</a></span></p>` : ''}
+      ${p.home_improvement && p.status !== 'expired' ? contractTerms(p, p.accepted_total) : ''}
       ${accept}
       <p class="small muted" style="margin-top:20px">Questions? Call ${call}.</p>`);
     wire(p);
@@ -126,6 +161,16 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
         }
       });
     }
+    root.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+    const cancel = root.querySelector<HTMLButtonElement>('[data-cancel]');
+    let armed = false;
+    cancel?.addEventListener('click', async () => {
+      const err = root.querySelector<HTMLElement>('[data-cancel-err]')!;
+      if (!armed) { armed = true; cancel.textContent = 'Press again to cancel the contract'; return; }
+      cancel.disabled = true; cancel.textContent = 'Cancelling…';
+      try { render(await rpc('cancel_proposal', { p_token: token })); }
+      catch (x) { err.textContent = (x as Error).message; cancel.disabled = false; cancel.textContent = 'Cancel this contract'; armed = false; }
+    });
     const pay = root.querySelector<HTMLButtonElement>('[data-pay]');
     pay?.addEventListener('click', async () => {
       const err = root.querySelector<HTMLElement>('[data-err]')!;
@@ -134,8 +179,8 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
         const r = await fetch(`${SB_URL}/functions/v1/proposal-checkout`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
         const body = await r.json().catch(() => ({}));
         if (body.url) { location.href = body.url; return; }
-        err.innerHTML = r.status === 503
-          ? `Online payment is not switched on yet. Your acceptance is saved; we will call you to take the deposit, or call ${call}.`
+        err.innerHTML = r.status === 503 || body.error === 'escrow'
+          ? `Online payment is not switched on yet. Your acceptance is saved; we will call you to arrange the deposit, or call ${call}.`
           : esc(body.error || 'Payment is not available right now.') + ` Call ${call}.`;
       } catch {
         err.innerHTML = `Could not reach the payment page. Try again, or call ${call}.`;
