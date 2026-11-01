@@ -15,6 +15,7 @@ The database is live business data. Read freely; change carefully.
 - "Что нового?" / morning check: `select * from ops_today;` then new leads, newest first, emergencies on top. Summarize per lead in one line: who, building, what they need, how long they have waited.
 - Working a lead: read it with its notes. Draft the reply (email draft, never sent without the user's yes). Status changes and notes only when the user says so; add a note for every action, `author_name = 'Claude'`.
 - Creating work: `select public.convert_lead('<lead id>', 'survey')` (or `'service'` for repairs). It creates the client, the building and job `EZ-####`, and moves the lead to `survey`.
+- Proposals: draft them when asked (`insert into proposals`, status `draft`, options as `[{key, name, summary, recommended, lines: [{desc, qty, price}]}]`, prices from `src/data/plans.ts` ranges and the survey notes). Never mark one sent; staff check and send it from `/admin/`.
 - Scheduling: update `jobs.scheduled_start`, `scheduled_end`, `tech_id`, `stage`. Times are America/New_York.
 - Reports: leads by `source->>'utm_source'` and `source->>'referrer'`, conversion new > won, open jobs by stage, systems with `status = 'bad'`.
 - Invoices and plan status come from Stripe through `stripe-webhook`; do not edit them by hand.

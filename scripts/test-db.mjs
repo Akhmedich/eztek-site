@@ -141,6 +141,56 @@ await db.query(`insert into public.jobs (org_id, site_id, system_id, title) valu
 ok(true, 'client can report one of their systems');
 await rejects(db.query(`insert into public.jobs (org_id, system_id, title) values ($1, $2, 'x')`, [job.org_id, otherSys.id]), "client cannot report another client's system");
 
+// proposals: written by staff, opened and accepted by the client through a secret link
+await as('authenticated', STAFF);
+const prop = await one(`insert into public.proposals (job_id, title, options) values ($1, 'Lobby intercom upgrade', $2) returning id, number, org_id`, [jobId, JSON.stringify([
+  { key: 'a', name: 'Essential', lines: [{ desc: 'Video intercom panel', qty: 1, price: 4200 }, { desc: 'Installation', qty: 1, price: 1800 }] },
+  { key: 'b', name: 'Recommended', lines: [{ desc: 'Video intercom panel', qty: 1, price: 4200 }, { desc: 'Lobby cameras', qty: 4, price: 650.5 }] },
+])]);
+ok(/^P-\d{4}$/.test(prop.number) && prop.org_id === job.org_id, `staff write proposal ${prop.number} for the job's client`);
+prop.token = (await one('select token from public.proposal_tokens($1) where id = $2', [jobId, prop.id])).token;
+ok(!!prop.token, 'staff get the client link through proposal_tokens');
+await rejects(db.query(`insert into public.proposals (job_id, title, options) values ($1, 'Bad', '[{"key":"a","name":"A","lines":[{"desc":"x","qty":1,"price":"abc"}]}]')`, [jobId]), 'malformed options are rejected');
+await rejects(db.query(`insert into public.proposals (job_id, title, status) values ($1, 'Pre-accepted', 'accepted')`, [jobId]), 'a proposal cannot start out accepted');
+await as('anon');
+await rejects(db.query('select * from public.proposals'), 'website cannot list proposals');
+ok((await one('select public.proposal_by_token($1) as p', [prop.token])).p === null, 'a draft is not visible by its link');
+await as('authenticated', STAFF);
+await db.query(`update public.proposals set status = 'sent', sent_at = now() where id = $1`, [prop.id]);
+ok((await one('select public.proposal_by_token($1) as p', [prop.token])).p.status === 'sent', 'staff opening the link do not mark it viewed');
+await rejects(db.query(`update public.proposals set options = '[]' where id = $1`, [prop.id]), 'a sent proposal cannot be edited');
+await db.query(`insert into public.proposals (job_id, title) values ($1, 'Unsent draft')`, [jobId]);
+await as('anon');
+const seen = (await one('select public.proposal_by_token($1) as p', [prop.token])).p;
+ok(seen.status === 'viewed' && Number(seen.options[1].total) === 6802 && seen.client === 'Dana Kim', 'the link shows options with totals and marks it viewed');
+ok((await one('select public.proposal_by_token($1) as p', ['44444444-4444-4444-8444-444444444444'])).p === null, 'a wrong link shows nothing');
+await rejects(db.query('select public.accept_proposal($1, $2, $3)', [prop.token, 'z', 'Dana Kim']), 'cannot accept an option that does not exist');
+await rejects(db.query('select public.accept_proposal($1, $2, $3)', [prop.token, 'b', ' ']), 'accepting needs a typed name');
+const acc = (await one('select public.accept_proposal($1, $2, $3) as p', [prop.token, 'b', 'Dana Kim'])).p;
+ok(acc.status === 'accepted' && Number(acc.deposit_amount) === 3401 && acc.deposit_status === 'pending', 'accepting sets a 50% deposit due');
+await rejects(db.query('select public.accept_proposal($1, $2, $3)', [prop.token, 'a', 'Dana Kim']), 'a proposal is accepted only once');
+await rejects(db.query(`update public.proposals set deposit_status = 'paid'`), 'website cannot mark a deposit paid');
+await as('authenticated', STAFF);
+ok((await one('select status from public.leads where id = $1', [lead.id])).status === 'won', 'accepting marks the lead won');
+await rejects(db.query(`update public.proposals set options = '[]' where id = $1`, [prop.id]), 'an accepted proposal cannot be edited');
+await as('authenticated', CLIENT);
+ok((await db.query('select number from public.proposals')).rows.length === 1, 'the client sees their sent proposal, not drafts');
+await rejects(db.query('select token from public.proposals'), 'clients cannot read proposal links');
+ok((await db.query('select * from public.proposal_tokens($1)', [jobId])).rows.length === 0, 'proposal_tokens gives clients nothing');
+await rejects(db.query(`update public.proposals set deposit_status = 'paid'`).then((r) => { if (!r.affectedRows) throw new Error('no rows'); }), 'clients cannot change a proposal');
+ok((await db.query(`select body from public.notes where body like 'Proposal%'`)).rows.length === 1, 'the client sees the acceptance note');
+await as('authenticated', OTHER);
+ok((await db.query('select id from public.proposals')).rows.length === 0, 'other clients do not see it');
+await as('authenticated', STAFF);
+const staleId = (await one(`insert into public.proposals (job_id, title, status, valid_until, options) values ($1, 'Old offer', 'sent', current_date - 2, $2) returning id`, [jobId, JSON.stringify([{ key: 'a', name: 'A', lines: [] }])])).id;
+const stale = await one('select token from public.proposal_tokens($1) where id = $2', [jobId, staleId]);
+await as('anon');
+await rejects(db.query('select public.accept_proposal($1, $2, $3)', [stale.token, 'a', 'Dana Kim']), 'an expired proposal cannot be accepted');
+ok((await one('select public.proposal_by_token($1) as p', [stale.token])).p.status === 'expired', 'an expired proposal shows as expired');
+await as('service_role');
+await db.query(`update public.proposals set deposit_status = 'paid' where id = $1`, [prop.id]);
+ok(true, 'the Stripe webhook can mark the deposit paid');
+
 // photos and plans on a quote request
 const FILES_LEAD = '11111111-1111-4111-8111-111111111111';
 const upload = (folder, file) => db.query(`insert into storage.objects (bucket_id, name) values ('lead-files', $1)`, [`${folder}/${file}`]);

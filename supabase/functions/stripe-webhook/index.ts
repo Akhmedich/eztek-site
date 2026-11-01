@@ -1,12 +1,39 @@
 // Keeps the database in step with Stripe: care plan status per building and the invoice list.
 // Stripe endpoint: https://<project>.supabase.co/functions/v1/stripe-webhook
-// Events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted,
+// Events: checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed,
+// customer.subscription.updated, customer.subscription.deleted,
 // invoice.finalized, invoice.paid, invoice.payment_failed, invoice.voided, invoice.marked_uncollectible
 import Stripe from 'npm:stripe@22.6.2';
 import { stripe, admin, planForPrice } from '../_shared/billing.ts';
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.118.0';
 
 const crypto = Stripe.createSubtleCryptoProvider();
 const STATUS: Record<string, string> = { active: 'active', trialing: 'active', past_due: 'past_due', unpaid: 'past_due', incomplete: 'pending', canceled: 'canceled', incomplete_expired: 'canceled', paused: 'past_due' };
+
+// Deposit on a proposal. A bank (ACH) payment completes unpaid (processing) and succeeds or fails
+// days later. A database error throws, so Stripe retries the event.
+async function deposit(db: SupabaseClient, type: string, s: Stripe.Checkout.Session) {
+  const { data: p, error } = await db.from('proposals').select('id,job_id,number,deposit_amount,deposit_status,checkout_session_id').eq('id', s.metadata!.proposal_id).maybeSingle();
+  if (error) throw error;
+  if (!p) return;
+  const set = async (deposit_status: string) => { const { error } = await db.from('proposals').update({ deposit_status }).eq('id', p.id); if (error) throw error; };
+  const note = async (body: string, client_visible = false) => { const { error } = await db.from('notes').insert({ job_id: p.job_id, author_name: 'Stripe', client_visible, body }); if (error) throw error; };
+  const usd = (cents: number | null) => `$${((cents ?? 0) / 100).toFixed(2)}`;
+  if (type === 'checkout.session.async_payment_failed') {
+    if (p.deposit_status !== 'processing') return;
+    await set('pending');
+    return note(`The bank payment for the ${p.number} deposit did not go through. The client can pay again from the proposal link.`, true);
+  }
+  if (s.payment_status !== 'paid') { if (p.deposit_status === 'pending') await set('processing'); return; }
+  if (p.deposit_status === 'paid') {
+    if (s.id === p.checkout_session_id) return; // the same payment reported again
+    return note(`A second deposit payment of ${usd(s.amount_total)} came in for ${p.number} (Stripe ${s.id}). Refund it in Stripe.`);
+  }
+  const due = Math.round(Number(p.deposit_amount) * 100);
+  if (s.amount_total !== due) return note(`A deposit payment of ${usd(s.amount_total)} came in for ${p.number}, but ${usd(due)} was due. Check it in Stripe (${s.id}).`);
+  await set('paid');
+  await note(`Deposit for ${p.number} received: ${usd(due)}. We will call to schedule the work.`, true);
+}
 
 Deno.serve(async (req) => {
   let event: Stripe.Event;
@@ -19,9 +46,12 @@ Deno.serve(async (req) => {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed': {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+      case 'checkout.session.async_payment_failed': {
         const s = event.data.object as Stripe.Checkout.Session;
-        if (s.mode !== 'subscription' || !s.metadata?.site_id) break;
+        if (s.mode === 'payment' && s.metadata?.proposal_id) { await deposit(db, event.type, s); break; }
+        if (event.type !== 'checkout.session.completed' || s.mode !== 'subscription' || !s.metadata?.site_id) break;
         await db.from('sites').update({
           stripe_subscription_id: String(s.subscription), plan: s.metadata.plan, plan_status: 'active', plan_since: new Date().toISOString().slice(0, 10),
         }).eq('id', s.metadata.site_id);
