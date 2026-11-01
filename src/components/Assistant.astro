@@ -1,0 +1,205 @@
+---
+// Website assistant (Claude, through the `assistant` Supabase function). Text chat, plus voice
+// where the browser supports it: speak with the mic button, replies are read aloud.
+// Shown when PUBLIC_ASSISTANT=on and the Supabase project is connected (docs/ops.md).
+import Icon from './Icon.astro';
+import { company } from '../data/company';
+import { tel } from '../lib/url';
+---
+<div class="asst" data-asst>
+  <button type="button" class="asst-fab" aria-expanded="false" aria-controls="asst-panel" data-asst-open><Icon name="chat" />Ask EZTek</button>
+  <section class="asst-panel" id="asst-panel" aria-label="EZTek assistant" hidden>
+    <header class="asst-head">
+      <b>EZTek assistant</b>
+      <button type="button" class="asst-ic" aria-pressed="false" data-asst-voice>Read aloud</button>
+      <button type="button" class="asst-ic" aria-label="Close" data-asst-close>✕</button>
+    </header>
+    <div class="asst-log" aria-live="polite" data-asst-log>
+      <p class="asst-msg bot">Hi! Ask about cameras, intercoms, access control or a project in your building. I can also pass a request to the team.</p>
+    </div>
+    <form class="asst-form" data-asst-form>
+      <label class="sr" for="asst-in">Message</label>
+      <textarea id="asst-in" rows="1" maxlength="2000" placeholder="Type a message…" data-asst-in></textarea>
+      <button type="button" class="asst-ic" aria-pressed="false" data-asst-mic hidden>Speak</button>
+      <button class="btn sm" data-asst-send>Send</button>
+    </form>
+    <p class="asst-fine">AI assistant, it can make mistakes. Messages are processed by Anthropic; do not share codes or passwords. Emergency? Call <a href={tel}>{company.phoneDisplay}</a>.</p>
+  </section>
+</div>
+
+<script>
+  import { sendLead } from '../scripts/lead';
+  import { u } from '../lib/url';
+  import { company } from '../data/company';
+
+  const URL_FN = `${import.meta.env.PUBLIC_SUPABASE_URL}/functions/v1/assistant`;
+  const KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string;
+  const STORE = 'ez-assistant';
+  const PAGES = /(^|[\s(])(\/(?:quote|service|care-plans|portal|contact|partners|about|services|buildings|areas)\/[a-z0-9/-]*)/g;
+  const PHONE = new RegExp(company.phoneDisplay.replace(/[()]/g, '\\$&'), 'g');
+  const PREFIX: Record<string, string> = { quote: 'Q', service: 'S', contact: 'C' };
+  const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+
+  const root = document.querySelector<HTMLElement>('[data-asst]')!;
+  const fab = root.querySelector<HTMLButtonElement>('[data-asst-open]')!;
+  const panel = root.querySelector<HTMLElement>('#asst-panel')!;
+  const log = root.querySelector<HTMLElement>('[data-asst-log]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-asst-form]')!;
+  const input = root.querySelector<HTMLTextAreaElement>('[data-asst-in]')!;
+  const send = root.querySelector<HTMLButtonElement>('[data-asst-send]')!;
+  const mic = root.querySelector<HTMLButtonElement>('[data-asst-mic]')!;
+  const voiceBtn = root.querySelector<HTMLButtonElement>('[data-asst-voice]')!;
+
+  // Conversation as the API sees it (sent back unchanged each turn), and what the visitor saw.
+  // Saved only between turns, so a reload never restores a save_request call without its result.
+  type Msg = { role: 'user' | 'assistant'; content: unknown };
+  type Block = { type: string; text?: string; id?: string; name?: string; input?: Record<string, string> };
+  let history: Msg[] = [];
+  let shown: { who: 'me' | 'bot'; text: string }[] = [];
+  let voice = false;
+  let busy = false;
+
+  const save = () => { try { sessionStorage.setItem(STORE, JSON.stringify({ history, shown, voice })); } catch { /* storage blocked */ } };
+  try {
+    const s = JSON.parse(sessionStorage.getItem(STORE) || '{}');
+    history = s.history || []; shown = s.shown || []; voice = !!s.voice;
+  } catch { /* ignore */ }
+
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  // site paths and the phone number in replies become links
+  const linkify = (s: string) => esc(s)
+    .replace(PAGES, (_, pre, p) => `${pre}<a href="${u(p)}">${p}</a>`)
+    .replace(PHONE, `<a href="tel:${company.phone}">${company.phoneDisplay}</a>`);
+
+  function add(who: 'me' | 'bot', text: string, keep = true) {
+    const p = document.createElement('p');
+    p.className = `asst-msg ${who}`;
+    if (who === 'bot') p.innerHTML = linkify(text); else p.textContent = text;
+    log.append(p); log.scrollTop = log.scrollHeight;
+    if (keep) shown.push({ who, text });
+  }
+  shown.forEach((m) => add(m.who, m.text, false));
+
+  function open(on: boolean) {
+    panel.hidden = !on; fab.hidden = on;
+    fab.setAttribute('aria-expanded', String(on));
+    if (on) { input.focus(); log.scrollTop = log.scrollHeight; } else { stopListening(); synth?.cancel(); fab.focus(); }
+  }
+  fab.addEventListener('click', () => open(true));
+  root.querySelector('[data-asst-close]')!.addEventListener('click', () => open(false));
+  panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') open(false); });
+
+  // Voice: replies read aloud; the voice follows the reply's script when it differs from the browser's language
+  voiceBtn.hidden = !synth;
+  const syncVoice = () => voiceBtn.setAttribute('aria-pressed', String(voice));
+  syncVoice();
+  voiceBtn.addEventListener('click', () => { voice = !voice; if (!voice) synth?.cancel(); syncVoice(); save(); });
+  function speak(text: string) {
+    if (!voice || !synth) return;
+    const ut = new SpeechSynthesisUtterance(text);
+    ut.lang = /[а-яё]/i.test(text) ? 'ru-RU' : /[一-鿿]/.test(text) ? 'zh-CN' : /[ñ¿¡]/i.test(text) ? 'es-US' : navigator.language || 'en-US';
+    synth.cancel(); synth.speak(ut);
+  }
+
+  // Speech to text (Chrome, Edge, Safari); the mic button stays hidden elsewhere
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  let rec: any = null;
+  function stopListening() { rec?.stop(); }
+  if (SR) {
+    mic.hidden = false;
+    mic.addEventListener('click', () => {
+      if (rec) return stopListening();
+      synth?.cancel();
+      rec = new SR();
+      rec.lang = navigator.language || 'en-US';
+      rec.interimResults = true;
+      let said = '';
+      let failed = false;
+      rec.onresult = (e: any) => { said = Array.from(e.results as ArrayLike<any>).map((r) => r[0].transcript).join(''); input.value = said; };
+      rec.onerror = () => { failed = true; };
+      rec.onend = () => {
+        rec = null; mic.setAttribute('aria-pressed', 'false');
+        if (said.trim()) { voice = true; syncVoice(); submit(said.trim()); }
+        else if (failed) add('bot', 'I could not hear you. Check the microphone permission, or type instead.', false);
+      };
+      mic.setAttribute('aria-pressed', 'true');
+      rec.start();
+    });
+  }
+
+  type Reply = { content: Block[]; stop_reason: string } | { error: string };
+  async function call(): Promise<Reply> {
+    try {
+      const r = await fetch(URL_FN, { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history }) });
+      if (!r.ok) return { error: r.status === 429 ? 'busy' : r.status === 400 ? 'bad request' : 'unavailable' };
+      const body = await r.json();
+      return Array.isArray(body?.content) ? body : { error: 'unavailable' };
+    } catch { return { error: 'network' }; }
+  }
+
+  // save_request runs here, through the same path as the website forms
+  async function runTool(b: Block): Promise<string> {
+    const i = b.input || {};
+    if (!i.name || !(i.phone || i.email)) return 'Not saved: a name and a phone number or email are needed.';
+    const fields = { name: i.name, phone: i.phone, email: i.email, company: i.company, address: i.address, systems: i.systems, urgency: i.urgency, message: i.summary };
+    const kind = PREFIX[i.kind] ? i.kind : 'contact';
+    const label = i.urgency === 'emergency' ? 'EMERGENCY assistant' : 'Assistant';
+    const r = await sendLead(kind, label, PREFIX[kind], fields, '', { channel: 'assistant' });
+    if (!r.ok) return 'Not saved: the request could not be sent. Ask them to call the EZTek phone number.';
+    // shown right away, so the visitor has the number even if the next reply fails
+    add('bot', r.preview ? `Preview site: nothing was sent (reference ${r.id}).` : `Request saved. Your reference number is ${r.id}.`);
+    return r.preview ? `Preview site, nothing was sent. Reference number: ${r.id}` : `Saved. Reference number: ${r.id}`;
+  }
+
+  async function submit(text: string) {
+    if (busy || !text) return;
+    busy = true; send.disabled = true; input.value = '';
+    // long chats start over rather than grow past what the function accepts
+    if (history.length > 44) { history = []; add('bot', 'Starting a fresh conversation.', false); }
+    const mark = history.length;
+    let toolRan = false;
+    add('me', text);
+    history.push({ role: 'user', content: text });
+    const typing = document.createElement('p'); typing.className = 'asst-msg bot wait'; typing.textContent = '…'; log.append(typing);
+    try {
+      for (let turn = 0; turn < 4; turn++) {
+        const res = await call();
+        if ('error' in res) {
+          // a saved request stays in the history (it ends with its result, which is valid);
+          // otherwise go back to before this message, and drop a history the function rejects
+          if (res.error === 'bad request') history = [];
+          else if (!toolRan) history.length = mark;
+          add('bot', res.error === 'busy' ? 'Lots of questions right now. Please try again in a minute, or call us.' : `The assistant is not available right now. Please call ${company.phoneDisplay} or use /quote/.`, false);
+          break;
+        }
+        if (res.stop_reason === 'refusal') {
+          if (!toolRan) history.length = mark;
+          add('bot', `I can't help with that here. For anything about your building, call ${company.phoneDisplay}.`);
+          break;
+        }
+        history.push({ role: 'assistant', content: res.content });
+        const reply = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+        if (reply) { add('bot', reply); speak(reply); }
+        const tools = res.content.filter((b) => b.type === 'tool_use');
+        if (res.stop_reason !== 'tool_use' || !tools.length) break;
+        const results = [];
+        for (const b of tools) {
+          const out = b.name === 'save_request' ? await runTool(b) : 'Unknown tool.';
+          if (!out.startsWith('Not saved')) toolRan = true;
+          results.push({ type: 'tool_result', tool_use_id: b.id, content: out, ...(out.startsWith('Not saved') ? { is_error: true } : {}) });
+        }
+        history.push({ role: 'user', content: results });
+      }
+    } finally {
+      typing.remove();
+      // never keep a save_request call without its result
+      const last = history.at(-1);
+      if (last?.role === 'assistant' && Array.isArray(last.content) && (last.content as Block[]).some((b) => b.type === 'tool_use')) history.pop();
+      save();
+      busy = false; send.disabled = false; input.focus();
+    }
+  }
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); submit(input.value.trim()); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input.value.trim()); } });
+</script>

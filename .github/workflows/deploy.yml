@@ -27,11 +27,13 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:db
+      - run: npm run assistant:knowledge -- --check
       - run: npm run build
         env:
           # Repository variables; while empty, forms stay in preview mode and /admin/ says "not connected"
           PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_ASSISTANT: ${{ vars.PUBLIC_ASSISTANT }}
           PUBLIC_FORM_ENDPOINT: ${{ vars.PUBLIC_FORM_ENDPOINT }}
           PUBLIC_FORM_KEY: ${{ vars.PUBLIC_FORM_KEY }}
       - uses: actions/upload-pages-artifact@v3

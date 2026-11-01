@@ -25,6 +25,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `portal_summary` (view) | Per client: open requests, systems needing attention, next visit, balance due. |
 | `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. A lead from a QR sticker goes straight to that client's building and system. |
 | `qr_label(qr)` | Name of the system behind a sticker, for the public report page. |
+| Storage `lead-files` | Photos and plans attached to a quote request, in a private bucket: `lead-files/<lead id>/`. Only staff can open them (in the lead in `/admin/`). Up to 10 files per request, 10 MB each; the whole site takes at most 30 uploads an hour and 100 a day, which slows any abuse of the free 1 GB; a CAPTCHA is the next step if spam appears (Later). Photos are shrunk in the browser first. |
 
 ## Pages
 - `/admin/` staff: leads, jobs, clients; add systems to a building, invite client users, open QR report pages.
@@ -39,8 +40,9 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `billing-portal` | Stripe billing portal: cards, ACH bank accounts, autopay, invoices, cancel. |
 | `stripe-webhook` | Updates plan status per building and the invoice list from Stripe events. |
 | `invite-member` | Gives a person portal access and emails the sign-in link. Staff invite anyone; client admins invite to their own account. |
+| `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 39 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 52 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician, and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
@@ -72,8 +74,20 @@ Re-run the deploy (Actions > Build and deploy > Run workflow) after changing var
 
 Until this is done, the portal's billing buttons say online billing is not set up and ask the client to call.
 
+## Website assistant (owner, about 10 minutes)
+A chat button on every public page ("Ask EZTek"). Visitors type or speak (Chrome, Edge, Safari), and the assistant answers out loud if they turn voice on. It answers only from confirmed facts: `npm run assistant:knowledge` builds its reference from `src/data` and leaves out every PLACEHOLDER value (prices, hours, licenses, ratings), so it never quotes them; for prices it sends people to `/quote/`. When a visitor wants a call back, it repeats the details, asks them to confirm and saves the request like a website form: a lead in EZTek Ops with `source.channel = assistant`, plus the usual email copy.
+
+1. **Anthropic account** for EZTek at console.anthropic.com (billing on the business card). Set a monthly spend limit (Settings > Limits); each reply costs about a cent.
+2. **Key.** Create an API key and enter it yourself in Supabase: Edge Functions > Secrets, `ANTHROPIC_API_KEY`. Claude never handles it.
+3. **Function.** Ask Claude to deploy `assistant` (JWT check off), or run `npx supabase functions deploy assistant --no-verify-jwt`. If the site moves to a new address, add it to the `ASSISTANT_ORIGINS` secret (comma-separated; the default covers akhmedich.github.io, eztekav.com and www.eztekav.com).
+4. **Turn it on.** GitHub repository variable `PUBLIC_ASSISTANT` = `on`, then re-run the deploy. Remove it to hide the button.
+
+After changing services, buildings or areas in `src/data`, run `npm run assistant:knowledge`, commit the new `supabase/functions/assistant/knowledge.ts` and redeploy the function (CI fails if the file is out of date).
+
 ## Later
 - Documents in the portal (as-builts, reports, COI) on Supabase Storage.
 - Daily 8 AM summary from Claude to Mansur: new leads, emergencies, today's jobs.
 - Own email sender for sign-in links (Supabase's built-in sender is limited to a few emails per hour).
 - Text message updates to clients when a job is scheduled or completed.
+- Voice secretary on the phone line: the same assistant answering calls to (888) 693-9835 after hours or when the line is busy, saving a lead and texting the team. Needs a phone provider account (Twilio or Telnyx) and a forwarding rule on the business number, about $1-2 per number per month plus per-minute charges (check current prices).
+- A CAPTCHA (Cloudflare Turnstile) on forms and file uploads if spam shows up.

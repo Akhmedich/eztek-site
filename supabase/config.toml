@@ -418,3 +418,7 @@ enabled = true
 # Stripe calls this without a Supabase session; the function checks Stripe's signature instead
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Website visitors call this with the publishable key (not a JWT); it checks the site origin and rate-limits
+[functions.assistant]
+verify_jwt = false

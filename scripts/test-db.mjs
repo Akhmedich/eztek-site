@@ -19,8 +19,17 @@ await db.exec(`
   grant usage on schema auth to anon, authenticated;
   grant execute on function auth.uid() to anon, authenticated;
   create publication supabase_realtime;
-  -- The project runs with "Automatically expose new tables" off: no default privileges,
-  -- every grant comes from the migrations
+  -- Storage as Supabase ships it: RLS on, the API roles may insert and select, policies decide
+  create schema storage;
+  create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets, name text, owner uuid, created_at timestamptz default now());
+  create function storage.foldername(name text) returns text[] language sql immutable as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+  alter table storage.objects enable row level security;
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert on storage.objects to anon, authenticated;
+  -- The project runs with "Automatically expose new tables" off: every data grant comes from the
+  -- migrations. Supabase still hands the API roles these on new tables; a migration revokes them.
+  alter default privileges in schema public grant truncate, trigger, references on tables to anon, authenticated, service_role;
 `);
 process.on('unhandledRejection', (e) => { console.error('ERROR', e.message, e.where || ''); process.exit(1); });
 for (const f of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) await db.exec(readFileSync(new URL(f, dir), 'utf8'));
@@ -47,6 +56,8 @@ await rejects(db.query(`select public.convert_lead(gen_random_uuid())`), 'anon c
 await rejects(db.query(`select public.user_id_by_email('mansur@eztek.us')`), 'anon cannot look up accounts by email');
 await rejects(db.query(`select * from public.organizations`), 'anon has no access to client data');
 await rejects(db.query(`insert into public.leads (ref, kind, name) values ('Q-y', 'quote', repeat('a', 300))`), 'over-long name is rejected');
+await rejects(db.query('truncate public.leads'), 'anon cannot truncate tables');
+await rejects(db.query('select public.is_staff()'), 'anon cannot call staff helpers');
 
 // staff
 await as('authenticated', STAFF);
@@ -120,6 +131,43 @@ ok((await db.query('select * from public.portal_summary')).rows.length === 1, 'p
 await db.query(`insert into public.jobs (org_id, site_id, system_id, title) values ($1, $2, $3, 'Camera dark again')`, [job.org_id, job.site_id, sys.id]);
 ok(true, 'client can report one of their systems');
 await rejects(db.query(`insert into public.jobs (org_id, system_id, title) values ($1, $2, 'x')`, [job.org_id, otherSys.id]), "client cannot report another client's system");
+
+// photos and plans on a quote request
+const FILES_LEAD = '11111111-1111-4111-8111-111111111111';
+const upload = (folder, file) => db.query(`insert into storage.objects (bucket_id, name) values ('lead-files', $1)`, [`${folder}/${file}`]);
+await as('');
+await db.query(`update public.leads set created_at = now() - interval '2 hours' where id = $1`, [lead.id]);
+await as('anon');
+await db.query(`insert into public.leads (id, ref, kind, name, phone) values ($1, 'Q-1101-2222', 'quote', 'File Sender', '7185550122')`, [FILES_LEAD]);
+await upload(FILES_LEAD, 'lobby.jpg');
+ok(true, 'website can attach a file to a new lead');
+await rejects(upload('not-a-lead', 'x.jpg'), 'files need a lead folder');
+await rejects(upload('22222222-2222-4222-8222-222222222222', 'x.jpg'), 'files need an existing lead');
+await rejects(upload(lead.id, 'x.jpg'), 'files cannot be added to an old lead');
+ok((await db.query('select * from storage.objects')).rows.length === 0, 'website cannot list uploaded files');
+for (let i = 2; i <= 10; i++) await upload(FILES_LEAD, `photo-${i}.jpg`);
+await rejects(upload(FILES_LEAD, 'photo-11.jpg'), 'at most 10 files per lead');
+await as('authenticated', STAFF);
+ok((await db.query(`select name from storage.objects where bucket_id = 'lead-files'`)).rows.length === 10, 'staff see the files');
+await as('authenticated', CLIENT);
+ok((await db.query('select name from storage.objects')).rows.length === 0, 'clients cannot see request files');
+const FRESH = '33333333-3333-4333-8333-333333333333';
+await as('anon');
+await db.query(`insert into public.leads (id, ref, kind, name, phone) values ($1, 'Q-1101-3333', 'quote', 'Late Sender', '7185550133')`, [FRESH]);
+await as('');
+await db.query(`insert into storage.objects (bucket_id, name) select 'lead-files', 'x/' || g from generate_series(1, 20) g`);
+await as('anon');
+await rejects(upload(FRESH, 'a.jpg'), 'site-wide cap of 30 uploads an hour');
+await as('');
+await db.query(`update storage.objects set created_at = now() - interval '3 hours'`);
+await db.query(`insert into storage.objects (bucket_id, name, created_at) select 'lead-files', 'y/' || g, now() - interval '5 hours' from generate_series(1, 70) g`);
+await as('anon');
+await rejects(upload(FRESH, 'b.jpg'), 'site-wide cap of 100 uploads a day');
+await as('');
+await db.query(`delete from storage.objects where name like 'y/%'`);
+await as('anon');
+await upload(FRESH, 'c.jpg');
+ok(true, 'uploads open again under the caps');
 
 await as('service_role');
 ok((await one(`select public.user_id_by_email('MANSUR@eztek.us') as id`)).id === STAFF, 'server functions can look up accounts by email');
