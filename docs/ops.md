@@ -42,6 +42,8 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 - `/admin/` > Prospects, two lists from NYC public records, one click makes a lead:
   - **Permits:** new buildings and large alterations (last 30 days, $250k and up), with filters.
   - **Intercom violations:** apartment buildings with open HPD violations for a broken or missing intercom (issued in the last 120 days), one card per building with the number of open violations, the apartments, and the owner and managing agent from the building's HPD registration. The lead it makes is a service request for intercom work.
+  - **By manager** (Intercom violations): the same buildings grouped by managing agent, biggest portfolio first, with buildings and violations per borough. **Make portfolio lead** makes one service lead for all of a manager's open buildings (in the chosen borough, or all), so the talk is about the whole portfolio.
+  - **Copy link** copies a link to the list as filtered (for example `/admin/?tab=prospects&src=nyc-hpd&view=managers&status=open&borough=Brooklyn`); it opens the same list for anyone on the staff list, also after signing in. **Download CSV** saves the list for a spreadsheet.
 
 ## Server functions (`supabase/functions/`)
 | Function | What |
@@ -56,7 +58,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `prospects` | When staff open the Prospects tab, pulls from NYC Open Data (no key) into `prospects`: fresh DOB NOW filings, and buildings with open HPD intercom violations with their registered owner and managing agent. If one source is down, the other still loads. Staff only. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 131 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 142 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
