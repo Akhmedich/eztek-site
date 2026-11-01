@@ -2,7 +2,7 @@
   "mcpServers": {
     "eztek-ops": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=${SUPABASE_PROJECT_REF}&features=database,docs"
+      "url": "https://mcp.supabase.com/mcp?project_ref=aechfgsnroxltupkpxbs&features=database,functions,development,debugging,docs"
     }
   }
 }
