@@ -5,6 +5,8 @@
 // second click), and a bank payment on its way blocks a new one, so the client cannot pay twice.
 // Called from the client's proposal page (/p/?t=<token>) without sign-in, so deploy with
 // verify_jwt off: the proposal's secret token is the authorization.
+// Residential (home improvement) deposits must land in escrow at a New York bank (Lien Law § 71-a):
+// they are taken online only once the owner sets HOME_IMPROVEMENT_ESCROW=on (docs/home-improvement.md).
 // POST { token } -> { url } | { error }
 import { stripe, admin, cors, json, customerFor, PORTAL_URL } from '../_shared/billing.ts';
 
@@ -19,12 +21,13 @@ Deno.serve(async (req) => {
 
     const db = admin();
     const { data: p } = await db.from('proposals')
-      .select('id,number,org_id,status,accepted_option,options,deposit_amount,deposit_status,checkout_session_id')
+      .select('id,number,org_id,status,accepted_option,options,deposit_amount,deposit_status,checkout_session_id,home_improvement')
       .eq('token', token).maybeSingle();
     if (p?.deposit_status === 'processing') return json({ error: 'Your bank payment is on its way. You do not need to pay again.' }, 409);
     if (!p || p.status !== 'accepted' || p.deposit_status !== 'pending' || !p.org_id || !(Number(p.deposit_amount) > 0)) {
       return json({ error: 'There is no deposit to pay on this proposal.' }, 400);
     }
+    if (p.home_improvement && Deno.env.get('HOME_IMPROVEMENT_ESCROW') !== 'on') return json({ error: 'escrow' }, 409);
     if (p.checkout_session_id) {
       const prev = await stripe.checkout.sessions.retrieve(p.checkout_session_id);
       if (prev.status === 'open' && prev.url) return json({ url: prev.url });
