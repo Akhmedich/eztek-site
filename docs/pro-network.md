@@ -31,6 +31,7 @@ Clients rate a finished job (1 to 5 stars, a few words) from the review link; th
 ## New demand
 - **Marketplaces.** Thumbtack, Angi, Yelp and Google Local Services send leads through their own lead notifications; connect each with a Zapier or Make step that posts to the `intake` function (`docs/ops.md`). They arrive in the dashboard like website requests, with the channel.
 - **Permits.** New buildings and large alterations filed with NYC Buildings arrive in the Prospects tab; staff reach out to the owner or the architect.
+- **Broken intercoms.** Apartment buildings with open HPD violations for a broken or missing intercom arrive in the Prospects tab > Intercom violations, with the registered owner and managing agent; the owner has to fix it by HPD's deadline, so these are ready repair or replacement jobs.
 
 ## Still to decide (owner)
 - Whether EZTek supplies all equipment, or partners may supply their own at set prices.

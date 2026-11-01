@@ -32,7 +32,7 @@ import { u } from '../../lib/url';
     const toast = (m: string) => { toastEl.textContent = m; toastEl.hidden = false; clearTimeout(toastT); toastT = window.setTimeout(() => (toastEl.hidden = true), 3000); };
 
     type Row = Record<string, any>;
-    const S = { tab: 'leads', leadStatus: 'new', jobStage: 'open', sel: '' as string, staff: [] as Row[], me: null as Row | null, head: '', proStatus: 'applied', proTrade: '', prStatus: 'new', prBorough: 'all', prMin: 250000 };
+    const S = { tab: 'leads', leadStatus: 'new', jobStage: 'open', sel: '' as string, staff: [] as Row[], me: null as Row | null, head: '', proStatus: 'applied', proTrade: '', prStatus: 'new', prSource: 'nyc-dob', prBorough: 'all', prMin: 250000 };
     const LEAD_ST = ['new', 'contacted', 'survey', 'proposal', 'won', 'lost', 'spam'];
     const JOB_ST = ['received', 'scheduled', 'assigned', 'on_site', 'completed', 'cancelled'];
     const label = (s: string) => s.replace('_', ' ').replace(/^./, (c) => c.toUpperCase());
@@ -337,33 +337,49 @@ import { u } from '../../lib/url';
       return filters + `<div class="cols"><div class="rows">${rowsHtml}</div><div id="pane">${detail}</div></div>`;
     }
 
-    // Prospects: new buildings and large alterations from NYC permits (prospects function). Staff
-    // decide whom to reach out to; one click makes a lead. Fresh permits are pulled when the tab opens.
+    // Prospects from public records (prospects function): new buildings and large alterations from NYC
+    // permits, and apartment buildings with open HPD intercom violations. Staff decide whom to reach
+    // out to; one click makes a lead. Fresh records are pulled when the tab opens.
     const PR_ST = ['new', 'contacted', 'lead', 'skip'];
+    const PR_SRC: [string, string][] = [['nyc-dob', 'Permits'], ['nyc-hpd', 'Intercom violations']];
     let prospectsPulled = 0;
     async function prospectsView() {
       if (Date.now() - prospectsPulled > 3 * 3600e3) {
         prospectsPulled = Date.now();
-        sb!.functions.invoke('prospects', { body: {} }).then(({ data }) => { if (data?.added && S.tab === 'prospects') { toast(`${data.added} new permits`); render(false); } });
+        sb!.functions.invoke('prospects', { body: {} }).then(({ data }) => {
+          if (S.tab !== 'prospects' || !data) return;
+          const news = [data.permits && `${data.permits} new permits`, data.intercoms && `${data.intercoms} new buildings with intercom violations`].filter(Boolean).join(', ');
+          if (news) toast(news);
+          if (data.failed?.length) toast(`Could not reach NYC Open Data for ${data.failed.join(' and ')}; showing what is saved`);
+          render(false);
+        });
       }
-      let q = sb!.from('prospects').select('*').eq('status', S.prStatus).gte('cost', S.prMin).order('filed_on', { ascending: false }).limit(150);
-      if (S.prBorough !== 'all') q = q.eq('borough', S.prBorough);
+      const hpd = S.prSource === 'nyc-hpd';
+      let q = sb!.from('prospects').select('*').eq('source', S.prSource).eq('status', S.prStatus).order('filed_on', { ascending: false }).limit(150);
+      if (!hpd) q = q.gte('cost', S.prMin);
+      if (S.prBorough !== 'all') q = q.ilike('borough', S.prBorough);
       const { data } = await q;
-      const filters = `<div class="chipf">${PR_ST.map((s) => `<button data-prs="${s}" aria-pressed="${S.prStatus === s}">${label(s)}</button>`).join('')}
+      const filters = `<div class="chipf">${PR_SRC.map(([v, n]) => `<button data-prsrc="${v}" aria-pressed="${S.prSource === v}">${n}</button>`).join('')}</div>
+        <div class="chipf">${PR_ST.map((s) => `<button data-prs="${s}" aria-pressed="${S.prStatus === s}">${label(s)}</button>`).join('')}
         <label class="sr" for="prb">Borough</label><select id="prb" data-pr-borough>${['all', 'Brooklyn', 'Manhattan', 'Queens', 'Bronx', 'Staten Island'].map((b) => `<option value="${b}"${S.prBorough === b ? ' selected' : ''}>${b === 'all' ? 'All boroughs' : b}</option>`).join('')}</select>
-        <label class="sr" for="prm">Project size</label><select id="prm" data-pr-min>${([[250000, '$250k+'], [1000000, '$1M+'], [5000000, '$5M+']] as [number, string][]).map(([v, n]) => `<option value="${v}"${S.prMin === v ? ' selected' : ''}>${n}</option>`).join('')}</select></div>`;
+        ${hpd ? '' : `<label class="sr" for="prm">Project size</label><select id="prm" data-pr-min>${([[250000, '$250k+'], [1000000, '$1M+'], [5000000, '$5M+']] as [number, string][]).map(([v, n]) => `<option value="${v}"${S.prMin === v ? ' selected' : ''}>${n}</option>`).join('')}</select>`}</div>`;
       const cards = (data || []).map((x: Row) => {
-        const who = x.owner_business || x.applicant_business || '';
+        const who = x.owner_business || x.agent || x.applicant_business || '';
         const look = `https://www.google.com/search?q=${encodeURIComponent(`${who} ${x.address} ${x.borough || ''} NY`)}`;
         return `<div class="card stack" style="gap:8px;align-content:start"><div class="row sp"><b>${esc(x.address || 'Address not given')}</b><span class="small muted">${esc(x.borough || '')}</span></div>
-          <p class="small">${esc(x.job_type || '')}${x.cost ? ` · ${money(x.cost).replace(/\.00$/, '')}` : ''}${x.units ? ` · ${x.units} units` : ''}${x.filed_on ? ` · filed ${esc(x.filed_on)}` : ''}</p>
-          <p class="small muted">${x.owner_business ? `Owner: ${esc(x.owner_business)}` : ''}${x.applicant_business ? `${x.owner_business ? ' · ' : ''}Architect/engineer: ${esc(x.applicant_business)}` : ''}</p>
+          ${hpd ? `<p class="small">${x.violations ? `${x.violations} open intercom violation${x.violations === 1 ? '' : 's'}` : 'Intercom violation'}${x.filed_on ? ` · latest issued ${esc(x.filed_on)}` : ''}</p>
+          <p class="small muted">${[x.owner_business && `Owner: ${esc(x.owner_business)}`, x.agent && `Managing agent: ${esc(x.agent)}`].filter(Boolean).join(' · ') || 'Owner not on the HPD registration'}</p>`
+          : `<p class="small">${esc(x.job_type || '')}${x.cost ? ` · ${money(x.cost).replace(/\.00$/, '')}` : ''}${x.units ? ` · ${x.units} units` : ''}${x.filed_on ? ` · filed ${esc(x.filed_on)}` : ''}</p>
+          <p class="small muted">${x.owner_business ? `Owner: ${esc(x.owner_business)}` : ''}${x.applicant_business ? `${x.owner_business ? ' · ' : ''}Architect/engineer: ${esc(x.applicant_business)}` : ''}</p>`}
           ${x.description ? `<p class="small muted">${esc(x.description.slice(0, 220))}${x.description.length > 220 ? '…' : ''}</p>` : ''}
           <div class="row"><a class="btn sm ghost" href="${esc(look)}" target="_blank" rel="noopener">Look up</a>
             ${x.status === 'lead' ? '<span class="pill ok">Lead</span>' : `<button class="btn sm" data-pr-lead="${x.id}">Make lead</button>${x.status === 'new' ? `<button class="btn sm ghost" data-pr-set="contacted" data-id="${x.id}">Contacted</button>` : ''}${x.status !== 'skip' ? `<button class="btn sm ghost" data-pr-set="skip" data-id="${x.id}">Skip</button>` : ''}`}</div></div>`;
       }).join('');
-      return filters + `<p class="small muted" style="margin:-4px 0 12px">New buildings and large alterations filed with NYC Buildings in the last 30 days. Reach out to the owner or the architect; nothing is sent automatically.</p>`
-        + (cards ? `<div class="grid g3">${cards}</div>` : '<p class="empty card">Nothing here. New permits arrive daily.</p>');
+      const intro = hpd
+        ? 'Apartment buildings with open HPD violations for a broken or missing intercom, issued in the last 120 days. The owner has a deadline to fix it; reach out to the owner or the managing agent. Nothing is sent automatically.'
+        : 'New buildings and large alterations filed with NYC Buildings in the last 30 days. Reach out to the owner or the architect; nothing is sent automatically.';
+      return filters + `<p class="small muted" style="margin:-4px 0 12px">${intro}</p>`
+        + (cards ? `<div class="grid g3">${cards}</div>` : `<p class="empty card">Nothing here. ${hpd ? 'New violations' : 'New permits'} arrive daily.</p>`);
     }
 
     // Clients ---------------------------------------------------------------
@@ -399,6 +415,7 @@ import { u } from '../../lib/url';
       if (d.js) { press('[data-js]', 'aria-pressed'); S.jobStage = d.js; S.sel = ''; return render(false); }
       if (d.ps) { press('[data-ps]', 'aria-pressed'); S.proStatus = d.ps; S.sel = ''; return render(false); }
       if (d.prs) { press('[data-prs]', 'aria-pressed'); S.prStatus = d.prs; return render(false); }
+      if (d.prsrc) { press('[data-prsrc]', 'aria-pressed'); S.prSource = d.prsrc; return render(false); }
       if (d.prLead) {
         const { error } = await sb!.rpc('prospect_to_lead', { p_prospect: d.prLead });
         if (error) return toast(error.message);

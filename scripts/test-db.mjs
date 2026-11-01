@@ -298,6 +298,19 @@ const fromPermit = (await one('select public.prospect_to_lead($1) as id', [permi
 const pl = await one('select name, building, source from public.leads where id = $1', [fromPermit]);
 ok(pl.name === 'Summit Property Management' && pl.building === '141 units' && pl.source.permit === 'B01429125-I1', 'staff turn a permit into a lead in one step');
 await rejects(db.query('select public.prospect_to_lead($1)', [permit.id]), 'a prospect becomes a lead once');
+await as('service_role');
+const intercom = await one(`insert into public.prospects (source, source_id, filed_on, job_type, address, borough, owner_business, agent, violations, description) values ('nyc-hpd', '345678', '2026-10-20', 'HPD intercom violation', '2101 86 STREET', 'Brooklyn', 'Bay Ridge Gardens LLC', 'Anna Petrova', 3, 'Class B. Repair the broken or defective intercom system. Apartments: 2A, 4C.') returning id`);
+await db.query(`insert into public.prospects (source, source_id, violations) values ('nyc-hpd', '345678', 4) on conflict (source, source_id) do update set violations = excluded.violations`);
+const hp = await one(`select count(*)::int as n, max(violations) as v, max(status) as s from public.prospects where source = 'nyc-hpd'`);
+ok(hp.n === 1 && hp.v === 4 && hp.s === 'new', 'a building with intercom violations is stored once and its count refreshes');
+await rejects(db.query(`insert into public.prospects (source, source_id, violations) values ('nyc-hpd', 'x', -1)`), 'violation counts are not negative');
+await as('authenticated', STAFF);
+const fromHpd = (await one('select public.prospect_to_lead($1) as id', [intercom.id])).id;
+const hl = await one('select kind, name, building, systems, message, source from public.leads where id = $1', [fromHpd]);
+ok(hl.kind === 'service' && hl.name === 'Bay Ridge Gardens LLC' && hl.building === '4 open HPD intercom violations' && hl.systems === 'intercom-entry'
+  && hl.message.startsWith('Managing agent: Anna Petrova') && hl.source.hpd_building === '345678' && hl.source.channel === 'nyc-hpd' && !('permit' in hl.source),
+  'staff turn a building with intercom violations into a service lead');
+ok((await one('select source from public.leads where id = $1', [fromPermit])).source.permit === 'B01429125-I1', 'permit leads keep their permit number');
 await as('authenticated', CLIENT);
 ok((await db.query('select id from public.job_offers')).rows.length === 0, 'clients do not see offers to pros');
 
