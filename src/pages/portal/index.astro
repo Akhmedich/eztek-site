@@ -78,7 +78,10 @@ const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { nam
 
   async function start() {
     const { data: { session } } = await sb!.auth.getSession();
-    sb!.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') location.reload(); });
+    // supabase-js also reports SIGNED_IN for an existing session (page load, tab focus), so reload
+    // only when the signed-in user actually changes, or the page reloads forever
+    const was = session?.user.id ?? null;
+    sb!.auth.onAuthStateChange((_ev, s) => { if ((s?.user.id ?? null) !== was) location.reload(); });
     if (!session) return;
     out.hidden = true; app.hidden = false;
     const { data: staff } = await sb!.from('staff').select('user_id').eq('user_id', session.user.id).maybeSingle();
