@@ -22,6 +22,7 @@ import { u } from '../../lib/url';
 
   <script>
     import { sb, esc, ago, when, localInput } from '../../lib/supabase';
+    import { company } from '../../data/company';
 
     const app = document.getElementById('app')!;
     const who = document.getElementById('who')!;
@@ -171,7 +172,7 @@ import { u } from '../../lib/url';
 
     // Jobs ------------------------------------------------------------------
     async function jobsView() {
-      let q = sb!.from('jobs').select('*, sites(name,address), organizations(name)').order('created_at', { ascending: false }).limit(200);
+      let q = sb!.from('jobs').select('*, sites(name,address), organizations(name,billing_email)').order('created_at', { ascending: false }).limit(200);
       if (S.jobStage === 'open') q = q.not('stage', 'in', '(completed,cancelled)'); else if (S.jobStage !== 'all') q = q.eq('stage', S.jobStage);
       const { data: jobs } = await q;
       rows = jobs || [];
@@ -185,6 +186,7 @@ import { u } from '../../lib/url';
     }
 
     async function jobDetail(j: Row) {
+      const [notes, proposals] = await Promise.all([notesFor('job_id', j.id), proposalsFor(j)]);
       return `<div class="card detail">
         <div class="row sp"><h2 style="font-size:1.3rem">${esc(j.number)} · ${esc(j.title)}</h2>${pri(j.priority)}</div>
         <p class="muted small">${esc(j.organizations?.name || 'No client')}${j.sites ? ' · ' + esc(j.sites.name) + ', ' + esc(j.sites.address) : ''}</p>
@@ -199,7 +201,83 @@ import { u } from '../../lib/url';
           <div class="field"><label for="jse">End</label><input id="jse" type="datetime-local" data-job-f="scheduled_end" value="${localInput(j.scheduled_end)}"></div>
         </div>
         ${j.description ? `<dl class="kv"><dt>Details</dt><dd>${esc(j.description)}</dd></dl>` : ''}
-        <h3>Notes</h3>${await notesFor('job_id', j.id)}</div>`;
+        <h3>Proposals</h3>${proposals}
+        <h3>Notes</h3>${notes}</div>`;
+    }
+
+    // Proposals: written here (or drafted by Claude), sent as a link; the client accepts and pays on /p/
+    const PROP_PILL: Record<string, string> = { draft: 'mute', sent: 'info', viewed: 'info', accepted: 'ok', declined: 'mute', expired: 'warn' };
+    const money = (n: unknown) => Number(n || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const propLink = (token: string) => `${location.origin}${location.pathname.replace(/admin\/(index\.html)?$/, '')}p/?t=${token}`;
+    const props = new Map<string, Row>();
+    async function proposalsFor(j: Row) {
+      // links come from proposal_tokens(): the token column is closed to signed-in clients
+      const [{ data }, { data: tokens }] = await Promise.all([
+        sb!.from('proposals').select('id,number,title,intro,status,options,care_plan,deposit_pct,valid_until,accepted_total,deposit_amount,deposit_status').eq('job_id', j.id).order('created_at'),
+        sb!.rpc('proposal_tokens', { p_job: j.id }),
+      ]);
+      const tokenOf = new Map<string, string>((tokens || []).map((t: Row) => [t.id, t.token]));
+      const list = (data || []).map((p) => {
+        props.set(p.id, p);
+        const link = propLink(tokenOf.get(p.id) || '');
+        const mail = j.organizations?.billing_email
+          ? `mailto:${encodeURIComponent(j.organizations.billing_email)}?subject=${encodeURIComponent(`EZTek proposal ${p.number}: ${p.title}`)}&body=${encodeURIComponent(`Hello,\n\nHere is our proposal for ${p.title}. You can compare the options, accept online and pay the deposit here:\n${link}\n\nCall us with any questions: ${company.phoneDisplay}\n\nEZTek Solutions`)}`
+          : '';
+        const dep: Record<string, string> = { paid: 'paid', processing: 'bank payment on its way', pending: `${money(p.deposit_amount)} due`, none: 'none' };
+        const done = p.status === 'accepted' ? ` · ${money(p.accepted_total)} · deposit ${dep[p.deposit_status]}` : '';
+        const acts = p.status === 'draft'
+          ? `<button class="btn sm ghost" data-prop-edit="${p.id}">Edit</button><button class="btn sm" data-prop-send="${p.id}">Mark sent</button>`
+          : `${['sent', 'viewed'].includes(p.status) ? `<button class="btn sm ghost" data-prop-close="${p.id}">Close</button>` : ''}<button class="btn sm ghost" data-prop-copy="${esc(link)}">Copy client link</button>${mail ? `<a class="btn sm ghost" href="${esc(mail)}">Email link</a>` : ''}<a class="btn sm ghost" href="${esc(link)}" target="_blank" rel="noopener">Open</a>`;
+        return `<div class="note-item"><small>${esc(p.number)} · <span class="pill ${PROP_PILL[p.status] || 'mute'}">${label(p.status)}</span>${done}</small>${esc(p.title)}<div class="row" style="margin-top:6px">${acts}</div></div>`;
+      }).join('');
+      return `<div class="note-list">${list || '<p class="small muted">No proposals yet.</p>'}</div>
+        <div><button class="btn sm ghost" data-prop-new>New proposal</button></div><div data-prop-editor></div>`;
+    }
+
+    // Options are typed as plain text: "## Name" (add * for recommended), "> summary", "item | qty | unit price"
+    const OPT_EXAMPLE = '## Essential\n> Lobby panel; residents answer in the app\nVideo intercom panel | 1 | 4200\nInstallation and programming | 1 | 1800\n## Recommended *\nVideo intercom panel | 1 | 4200\nLobby camera | 4 | 650';
+    function parseOptions(text: string) {
+      const out: Row[] = [];
+      let cur: Row | null = null;
+      for (const raw of text.split('\n')) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (line.startsWith('## ')) {
+          cur = { key: String.fromCharCode(97 + out.length), name: line.slice(3).replace(/\s*\*$/, '').trim(), recommended: /\*$/.test(line), summary: '', lines: [] };
+          out.push(cur); continue;
+        }
+        if (!cur) throw new Error('Start each option with a line like "## Recommended".');
+        if (line.startsWith('>')) { cur.summary = `${cur.summary} ${line.slice(1).trim()}`.trim(); continue; }
+        const [desc, qty, price] = line.split('|').map((s) => s.trim());
+        const q = Number(qty), pr = Number((price || '').replace(/[$,\s]/g, ''));
+        if (!desc || !qty || !price || !isFinite(q) || !isFinite(pr)) throw new Error(`Write "${line}" as: item | qty | unit price`);
+        cur.lines.push({ desc, qty: q, price: pr });
+      }
+      if (!out.length) throw new Error('Add at least one option.');
+      if (out.some((o) => !o.lines.length)) throw new Error('Every option needs at least one item line.');
+      return out;
+    }
+    // a second click confirms, instead of a browser dialog
+    let closing = '';
+    function confirmClose(id: string) {
+      if (closing === id) { closing = ''; return true; }
+      closing = id; toast('Press Close again to close this proposal'); return false;
+    }
+    const optionsText = (opts: Row[]) => opts.map((o) => [`## ${o.name}${o.recommended ? ' *' : ''}`, ...(o.summary ? [`> ${o.summary}`] : []), ...o.lines.map((l: Row) => `${l.desc} | ${l.qty} | ${l.price}`)].join('\n')).join('\n');
+    function propEditor(p?: Row) {
+      return `<form class="stack" data-prop-form="${p?.id || ''}" style="gap:10px;margin-top:10px">
+        <div class="field"><label for="pt">Title</label><input id="pt" name="title" type="text" required maxlength="200" value="${esc(p?.title || '')}" placeholder="Lobby video intercom and cameras"></div>
+        <div class="field"><label for="pi">Intro <span class="muted">(optional)</span></label><textarea id="pi" name="intro" maxlength="3000" style="min-height:70px">${esc(p?.intro || '')}</textarea></div>
+        <div class="field"><label for="po">Options</label><textarea id="po" name="options" required style="min-height:200px;font:13px/1.5 var(--f-mono)" placeholder="${esc(OPT_EXAMPLE)}">${esc(p ? optionsText(p.options) : '')}</textarea>
+          <span class="hint">"## Name" starts an option (add * for recommended), "&gt; text" is its summary, then one "item | qty | unit price" line per item.</span></div>
+        <div class="inline">
+          <div class="field"><label for="pd">Deposit %</label><input id="pd" name="deposit" type="number" min="0" max="100" value="${p?.deposit_pct ?? 50}"></div>
+          <div class="field"><label for="pv">Valid until</label><input id="pv" name="valid" type="date" value="${esc(p?.valid_until || '')}"></div>
+          <div class="field"><label for="pc">Suggest care plan</label><select id="pc" name="plan"><option value="">None</option>${['essential', 'priority', 'managed'].map((k) => `<option value="${k}"${p?.care_plan === k ? ' selected' : ''}>${label(k)}</option>`).join('')}</select></div>
+        </div>
+        <p class="err" data-prop-err></p>
+        <div class="row"><button class="btn sm">Save draft</button><button type="button" class="btn sm ghost" data-prop-cancel>Cancel</button></div>
+      </form>`;
     }
 
     // Clients ---------------------------------------------------------------
@@ -235,6 +313,25 @@ import { u } from '../../lib/url';
       if (d.js) { press('[data-js]', 'aria-pressed'); S.jobStage = d.js; S.sel = ''; return render(false); }
       if (d.lead) return pick(d.lead);
       if (d.job) return pick(d.job);
+      const editor = app.querySelector<HTMLElement>('[data-prop-editor]');
+      if (d.propNew !== undefined && editor) { editor.innerHTML = propEditor(); return editor.querySelector('input')?.focus(); }
+      if (d.propEdit && editor) { editor.innerHTML = propEditor(props.get(d.propEdit)); return editor.querySelector('input')?.focus(); }
+      if (d.propCancel !== undefined && editor) { editor.innerHTML = ''; return; }
+      if (d.propClose) {
+        if (!confirmClose(d.propClose)) return;
+        const { error } = await sb!.from('proposals').update({ status: 'declined' }).eq('id', d.propClose);
+        if (error) return toast(error.message);
+        toast('Proposal closed: the client link no longer accepts it'); return pick(S.sel);
+      }
+      if (d.propCopy) { await navigator.clipboard.writeText(d.propCopy).catch(() => {}); return toast('Client link copied'); }
+      if (d.propSend) {
+        const { error } = await sb!.from('proposals').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', d.propSend);
+        if (error) return toast(error.message);
+        // the lead moves to "proposal" unless it is already further along
+        const lead = rows.find((r) => r.id === S.sel)?.lead_id;
+        if (lead) await sb!.from('leads').update({ status: 'proposal' }).eq('id', lead).in('status', ['new', 'contacted', 'survey']);
+        toast('Marked sent. Copy or email the client link.'); return pick(S.sel);
+      }
       if (d.convert) {
         const { data, error } = await sb!.rpc('convert_lead', { p_lead: d.convert, p_job_kind: d.kind });
         if (error) return toast(error.message);
@@ -271,6 +368,19 @@ import { u } from '../../lib/url';
         const { data, error } = await sb!.functions.invoke('invite-member', { body: { org_id: f.dataset.invite, email: v('email'), role: v('role') } });
         if (error || data?.error) return toast(data?.error || 'Invitations need the invite-member function deployed (docs/ops.md).');
         toast('Invitation sent'); return render();
+      }
+      if (f.dataset.propForm !== undefined) {
+        e.preventDefault();
+        const err = f.querySelector<HTMLElement>('[data-prop-err]')!;
+        let options;
+        try { options = parseOptions(v('options')); } catch (x) { err.textContent = (x as Error).message; return; }
+        const row: Row = { title: v('title'), intro: v('intro') || null, options, deposit_pct: Number(v('deposit') || 0), care_plan: v('plan') || null };
+        if (v('valid')) row.valid_until = v('valid');
+        const res = f.dataset.propForm
+          ? await sb!.from('proposals').update(row).eq('id', f.dataset.propForm)
+          : await sb!.from('proposals').insert({ ...row, job_id: S.sel });
+        if (res.error) { err.textContent = res.error.message; return; }
+        toast('Proposal saved as draft'); return pick(S.sel);
       }
       if (!f.dataset.note) return;
       e.preventDefault();

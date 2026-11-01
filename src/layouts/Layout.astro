@@ -9,8 +9,8 @@ import { BUILDINGS } from '../data/buildings';
 import { AREAS, METRO } from '../data/areas';
 import { u, tel, sms } from '../lib/url';
 
-interface Props { title: string; description: string; schema?: object[] }
-const { title, description, schema = [] } = Astro.props;
+interface Props { title: string; description: string; schema?: object[]; noindex?: boolean }
+const { title, description, schema = [], noindex = false } = Astro.props;
 const fullTitle = title.includes('EZTek') ? title : `${title} | EZTek Solutions`;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const path = Astro.url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ''), '') || '/';
@@ -41,7 +41,7 @@ const business = {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{fullTitle}</title>
   <meta name="description" content={description}>
-  {PREVIEW && <meta name="robots" content="noindex, nofollow, noarchive">}
+  {(PREVIEW || noindex) && <meta name="robots" content="noindex, nofollow, noarchive">}
   <link rel="canonical" href={canonical}>
   <meta property="og:type" content="website">
   <meta property="og:title" content={fullTitle}>

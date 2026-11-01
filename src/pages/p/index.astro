@@ -1,0 +1,158 @@
+---
+// The client's proposal: opened from the link EZTek sends (/p/?t=<token>), no account needed.
+// The client compares the options, accepts one by typing their name, and pays the deposit on Stripe.
+import Layout from '../../layouts/Layout.astro';
+import { company } from '../../data/company';
+import { PLANS } from '../../data/plans';
+import { tel, u } from '../../lib/url';
+
+const plans = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { name: p.name, price: p.price, from: p.from }]));
+---
+<Layout title="Your proposal" description="Your EZTek proposal: options, prices and online acceptance." noindex>
+  <section class="band" style="padding-top:clamp(28px,4vw,48px)"><div class="wrap prop" id="prop" aria-live="polite"
+    data-plans={JSON.stringify(plans)} data-phone={company.phoneDisplay} data-tel={tel} data-terms={u('/terms/')} data-care={u('/care-plans/')}>
+    <p class="muted">Loading your proposal…</p>
+  </div></section>
+</Layout>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  const root = document.getElementById('prop')!;
+  const D = root.dataset;
+  const PLANS = JSON.parse(D.plans!) as Record<string, { name: string; price: number; from: boolean }>;
+  const q = new URLSearchParams(location.search);
+  const token = q.get('t') || '';
+  const justPaid = q.get('paid') === '1';
+
+  type Line = { desc: string; qty: number; price: number };
+  type Option = { key: string; name: string; summary?: string; recommended?: boolean; lines: Line[]; total: number };
+  type Proposal = {
+    number: string; title: string; intro: string | null; status: string; valid_until: string; care_plan: string | null; deposit_pct: number;
+    options: Option[]; accepted_option: string | null; accepted_name: string | null; accepted_at: string | null; accepted_total: number | null;
+    deposit_amount: number | null; deposit_status: string; client: string | null; site: string | null;
+  };
+
+  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const money = (n: number) => Number(n).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: Number(n) % 1 ? 2 : 0 });
+  const day = (iso: string) => new Date(iso.length === 10 ? iso + 'T12:00:00' : iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const call = `<a href="${esc(D.tel)}">${esc(D.phone)}</a>`;
+  const show = (html: string) => { root.innerHTML = html; };
+
+  async function rpc(fn: string, args: Record<string, unknown>) {
+    const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
+    const body = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(body?.message || 'Something went wrong.');
+    return body;
+  }
+
+  function optionCard(o: Option, p: Proposal, pickable: boolean) {
+    const chosen = p.accepted_option === o.key;
+    const rows = o.lines.map((l) => `<tr><td>${esc(l.desc)}</td><td class="r">${esc(l.qty)}</td><td class="r">${money(l.price)}</td><td class="r">${money(l.qty * l.price)}</td></tr>`).join('');
+    return `<div class="card prop-opt${chosen ? ' chosen' : ''}${o.recommended ? ' rec' : ''}">
+      <div class="row sp">${pickable ? `<label class="prop-pick"><input type="radio" name="opt" value="${esc(o.key)}"${o.recommended ? ' checked' : ''}> <b>${esc(o.name)}</b></label>` : `<b>${esc(o.name)}</b>`}
+        ${o.recommended ? '<span class="pill info">Recommended</span>' : ''}${chosen ? '<span class="pill ok">Accepted</span>' : ''}</div>
+      ${o.summary ? `<p class="muted small">${esc(o.summary)}</p>` : ''}
+      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Unit</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="prop-total"><span>Total</span> <b>${money(o.total)}</b></p>
+    </div>`;
+  }
+
+  function render(p: Proposal) {
+    const acceptable = p.status === 'sent' || p.status === 'viewed';
+    const chosen = p.options.find((o) => o.key === p.accepted_option);
+    const plan = p.care_plan && PLANS[p.care_plan];
+    let state = '';
+    if (p.status === 'accepted' && chosen) {
+      const pay = p.deposit_status === 'processing'
+        ? `<p class="note">Your bank payment of ${money(p.deposit_amount || 0)} is on its way; bank (ACH) payments take 1-4 business days. You do not need to pay again.</p>`
+        : p.deposit_status === 'pending'
+        ? (justPaid
+          ? `<p class="note">Your payment is being processed. Card payments show here within a minute; bank (ACH) payments take 1-4 business days. You do not need to pay again.</p>`
+          : `<p>Deposit due now: <b>${money(p.deposit_amount || 0)}</b> (${p.deposit_pct}% of ${money(p.accepted_total || 0)}). The balance is invoiced when the work is done.</p>
+             <div class="row"><button class="btn" data-pay>Pay deposit by card or bank</button></div><p class="err" data-err></p>`)
+        : p.deposit_status === 'paid' ? `<p><b>Deposit received. Thank you.</b> We call you to schedule the work.</p>` : '';
+      state = `<div class="card stack prop-done"><p class="eyebrow">Accepted</p>
+        <p>${esc(p.accepted_name)} accepted <b>${esc(chosen.name)}</b> on ${day(p.accepted_at!)}, total ${money(p.accepted_total || 0)}.</p>${pay}</div>`;
+    } else if (p.status === 'expired') {
+      state = `<p class="note">This proposal expired on ${day(p.valid_until)}. Call ${call} and we will send an updated one.</p>`;
+    } else if (p.status === 'declined') {
+      state = `<p class="note">This proposal was closed. Call ${call} if you would like to talk about it.</p>`;
+    }
+    const accept = acceptable ? `<form class="card stack prop-accept" data-accept>
+        <h2 style="font-size:1.25rem">Accept this proposal</h2>
+        <p class="muted small">Pick an option above, then sign by typing your full name. ${p.deposit_pct ? `A ${p.deposit_pct}% deposit is due on acceptance, by card or bank transfer; the balance is invoiced when the work is done.` : ''}</p>
+        <p data-deposit class="small"></p>
+        <div class="field"><label for="sig">Your full name</label><input id="sig" name="sig" type="text" autocomplete="name" required maxlength="120"></div>
+        <label class="small"><input type="checkbox" name="agree" required> I accept this proposal and the <a href="${esc(D.terms)}" target="_blank" rel="noopener">terms</a>.</label>
+        <p class="err" data-err></p>
+        <button class="btn" type="submit">Accept and continue</button>
+      </form>` : '';
+    show(`<header class="sec-head" style="margin-bottom:20px">
+        <p class="eyebrow">Proposal ${esc(p.number)}${acceptable ? ` · valid until ${day(p.valid_until)}` : ''}</p>
+        <h1 style="font-size:clamp(1.8rem,3.4vw,2.5rem)">${esc(p.title)}</h1>
+        <p class="muted">${esc([p.client, p.site].filter(Boolean).join(' · '))}</p>
+        ${p.intro ? `<p style="white-space:pre-wrap">${esc(p.intro)}</p>` : ''}
+      </header>
+      ${state}
+      <div class="prop-opts">${p.options.map((o) => optionCard(o, p, acceptable)).join('')}</div>
+      ${plan ? `<p class="note" style="margin-top:16px"><span>After installation we suggest the <b>${esc(plan.name)}</b> care plan, ${plan.from ? 'from ' : ''}${money(plan.price)} a month per building: maintenance visits, faster dispatch and lower labor rates. It is optional and not part of the totals above. <a href="${esc(D.care)}">Compare plans</a></span></p>` : ''}
+      ${accept}
+      <p class="small muted" style="margin-top:20px">Questions? Call ${call}.</p>`);
+    wire(p);
+  }
+
+  function wire(p: Proposal) {
+    const form = root.querySelector<HTMLFormElement>('[data-accept]');
+    if (form) {
+      const dep = form.querySelector<HTMLElement>('[data-deposit]')!;
+      const picked = () => root.querySelector<HTMLInputElement>('input[name=opt]:checked')?.value || '';
+      const sync = () => {
+        const o = p.options.find((x) => x.key === picked());
+        dep.textContent = o ? `${o.name}: ${money(o.total)}${p.deposit_pct ? `, deposit ${money(Math.round(o.total * p.deposit_pct) / 100)}` : ''}` : 'Pick an option above.';
+      };
+      root.addEventListener('change', sync); sync();
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const err = form.querySelector<HTMLElement>('[data-err]')!;
+        const btn = form.querySelector<HTMLButtonElement>('button')!;
+        if (!picked()) { err.textContent = 'Pick one of the options above.'; return; }
+        btn.disabled = true; btn.textContent = 'Saving…'; err.textContent = '';
+        try {
+          render(await rpc('accept_proposal', { p_token: token, p_option: picked(), p_name: (form.elements.namedItem('sig') as HTMLInputElement).value }));
+          root.scrollIntoView({ behavior: 'smooth' });
+        } catch (x) {
+          err.textContent = (x as Error).message; btn.disabled = false; btn.textContent = 'Accept and continue';
+        }
+      });
+    }
+    const pay = root.querySelector<HTMLButtonElement>('[data-pay]');
+    pay?.addEventListener('click', async () => {
+      const err = root.querySelector<HTMLElement>('[data-err]')!;
+      pay.disabled = true; pay.textContent = 'Opening secure payment…';
+      try {
+        const r = await fetch(`${SB_URL}/functions/v1/proposal-checkout`, { method: 'POST', headers: { apikey: SB_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+        const body = await r.json().catch(() => ({}));
+        if (body.url) { location.href = body.url; return; }
+        err.innerHTML = r.status === 503
+          ? `Online payment is not switched on yet. Your acceptance is saved; we will call you to take the deposit, or call ${call}.`
+          : esc(body.error || 'Payment is not available right now.') + ` Call ${call}.`;
+      } catch {
+        err.innerHTML = `Could not reach the payment page. Try again, or call ${call}.`;
+      }
+      pay.disabled = false; pay.textContent = 'Pay deposit by card or bank';
+    });
+  }
+
+  (async () => {
+    if (!SB_URL || !SB_KEY) return show(`<p class="note">Proposals open here once the site is connected. Call ${call}.</p>`);
+    if (!/^[0-9a-f-]{36}$/i.test(token)) return show(`<h1 style="font-size:1.8rem">Proposal not found</h1><p class="muted">Open the link from your email or text, or call ${call}.</p>`);
+    try {
+      const p = await rpc('proposal_by_token', { p_token: token });
+      if (!p) return show(`<h1 style="font-size:1.8rem">Proposal not found</h1><p class="muted">This link is not valid any more. Call ${call} and we will resend it.</p>`);
+      render(p);
+    } catch {
+      show(`<p class="note">Could not load the proposal. Refresh the page, or call ${call}.</p>`);
+    }
+  })();
+</script>
