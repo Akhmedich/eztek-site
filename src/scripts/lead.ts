@@ -121,6 +121,13 @@ async function toMail(key: string | undefined, label: string, id: string, fields
   if (!r.ok) throw new Error(`mail ${r.status}`);
 }
 
+// Email copy of something that is not a lead (installer applications): same forms, same recipients
+export async function mailCopy(label: string, id: string, fields: Record<string, string>): Promise<boolean> {
+  if (!MAIL_URL) return false;
+  const res = await Promise.allSettled((MAIL_KEYS.length ? MAIL_KEYS : [undefined]).map((k) => toMail(k, label, id, fields)));
+  return res.some((r) => r.status === 'fulfilled');
+}
+
 export type LeadResult = { ok: boolean; id: string; preview: boolean; error?: string; filesFailed?: number };
 
 // kind: quote | service | contact | partner; label goes into the email subject;

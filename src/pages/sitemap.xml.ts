@@ -6,7 +6,7 @@ import { u } from '../lib/url';
 
 export const GET: APIRoute = ({ site }) => {
   const paths = [
-    '/', '/services/', '/buildings/', '/areas/', '/care-plans/', '/quote/', '/service/', '/about/', '/contact/', '/partners/', '/portal/', '/privacy/', '/terms/',
+    '/', '/services/', '/buildings/', '/areas/', '/care-plans/', '/quote/', '/service/', '/about/', '/contact/', '/partners/', '/join/', '/portal/', '/privacy/', '/terms/',
     ...SERVICES.map((s) => `/services/${s.slug}/`),
     ...BUILDINGS.map((b) => `/buildings/${b.slug}/`),
     ...AREAS.map((a) => `/areas/${a.slug}/`),

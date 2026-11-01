@@ -25,6 +25,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `portal_summary` (view) | Per client: open requests, systems needing attention, next visit, balance due. |
 | `convert_lead(lead, kind)` | Creates the client, the building and the first job from a lead. A lead from a QR sticker goes straight to that client's building and system. |
 | `qr_label(qr)` | Name of the system behind a sticker, for the public report page. |
+| `pros` | Technicians and partner companies who applied on `/join/`: trades, areas, licenses, insurance, status applied > approved / paused / rejected, staff notes. The website can only add an application. |
 | `proposals` | Offers after a survey: options with line items, deposit %, validity, suggested care plan. Status draft > sent > viewed > accepted (or expired, declined); deposit none > pending > processing (bank payment on its way) > paid. A sent proposal cannot be edited: write a new one. |
 | `proposal_by_token`, `accept_proposal` | What the client's link may do without an account: read that one proposal, accept one option by typing their name. Accepting marks the lead won and leaves a note the client sees. |
 | Storage `lead-files` | Photos and plans attached to a quote request, in a private bucket: `lead-files/<lead id>/`. Only staff can open them (in the lead in `/admin/`). Up to 10 files per request, 5 MB each; the whole site takes at most 20 uploads an hour and 40 a day (at worst 200 MB a day of the free 1 GB). Files cannot be removed through the API: clear old ones now and then in Supabase > Storage. Photos are shrunk in the browser first. |
@@ -34,6 +35,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 - `/admin/stickers/?site=…` printable QR stickers (2 x 2 in) for every system in a building.
 - `/portal/` clients: overview, requests with progress and messages, buildings and systems, care plans and invoices.
 - `/r/?q=…` the page behind a sticker: anyone in the building reports a problem; it arrives linked to the system.
+- `/join/` technicians and partner companies apply; staff review them in `/admin/` > Pros. Plan and rules: `docs/pro-network.md`.
 - `/p/?t=…` the client's proposal: compare options, accept by typing a name, pay the deposit by card or bank (ACH).
 
 ## Server functions (`supabase/functions/`)
@@ -47,7 +49,7 @@ EZTek had no order system. Instead of renting field-service software (Jobber fro
 | `proposal-checkout` | Stripe Checkout for the deposit on an accepted proposal; Stripe issues the invoice, so it shows in the portal. Deployed without JWT check: the proposal's secret link is the authorization. |
 | `assistant` | The website assistant (Claude): answers questions from the facts in `src/data` and takes requests, by text or voice. Deployed without JWT check; it accepts only the site's own addresses and the widget's message shapes, and limits how often one visitor can ask. A determined script can still fake those, so the Anthropic spend limit is the real cap. |
 
-Access rules (tested by `npm run test:db`, 91 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
+Access rules (tested by `npm run test:db`, 98 cases, with automatic table exposure off): the website can only add leads and cannot read anything; staff see everything; a client sees only their own organization, buildings, jobs, invoices, client-visible notes and the name of their technician (never the phone), and can open service requests for their own buildings and systems. Nobody deletes rows through the API, and invoices change only through the Stripe webhook.
 
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
