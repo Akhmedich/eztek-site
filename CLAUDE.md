@@ -2,6 +2,7 @@
 
 - This repo is its own project. Do not mix it with other projects of the owner (facebook-marketplace and others): no shared memory notes, configs or launch files.
 - Owner speaks Russian (often transliterated); reply in Russian, keep English terms translated.
+- Do the work yourself; don't hand tasks back. Only what truly needs the owner (signing in, API keys, approving a permission, a business decision) goes to them, and then all of it at once in one numbered list: where (site, page, menu), what to click, what to type or paste, how to tell it worked. Never a vague line like "allow it in the settings" or "click Connect". Before writing a step, check what the screen really shows (open the page if you can) so the button names match.
 - Work on `feature/*` or `fix/*` branches and open a pull request into `main` (CONTRIBUTING.md).
 - Business facts live in `src/data/`. Confirmed: name, address 1707 70th St Brooklyn NY 11204, phone (888) 693-9835, founded 2000, leads go to mansur@eztek.us. Everything else is example data marked `PLACEHOLDER` at the owner's request; keep marking new example values the same way. Prices in `src/data/plans.ts` are market-based (`MARKET:` comments, sources in `docs/pricing.md`), set 2026-11-01 at the owner's request: research before using a placeholder.
 - Never present sample projects, quotes, ratings or license numbers as real outside the preview.
