@@ -5,7 +5,9 @@
 import Stripe from 'npm:stripe@22.6.2';
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.118.0';
 
-export const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', { httpClient: Stripe.createFetchHttpClient() });
+// Stripe refuses to start without a key; until the owner adds one, the functions still start and
+// answer that online billing is not set up (calls to Stripe fail and are caught)
+export const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || 'not-configured', { httpClient: Stripe.createFetchHttpClient() });
 
 // Plans sold online. Managed is priced per building after a survey, so it is set up by staff in Stripe.
 export const PRICES: Record<string, string | undefined> = {
