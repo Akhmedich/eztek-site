@@ -46,7 +46,7 @@ import { u } from '../../lib/url';
       const { data: { session } } = await sb!.auth.getSession();
       sb!.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') location.reload(); });
       if (!session) return signIn();
-      const { data: me } = await sb!.from('staff').select('*').eq('user_id', session.user.id).maybeSingle();
+      const { data: me } = await sb!.from('staff').select('user_id,name,role,active').eq('user_id', session.user.id).maybeSingle();
       who.innerHTML = `${esc(session.user.email)} <button class="link" id="out">Sign out</button>`;
       document.getElementById('out')!.onclick = () => sb!.auth.signOut();
       if (!me) {
@@ -120,7 +120,16 @@ import { u } from '../../lib/url';
           <div class="field"><label for="lna">Next action</label><input id="lna" type="datetime-local" data-lead-next="${l.id}" value="${localInput(l.next_action_at)}"></div>
         </div>
         <dl class="kv">${rows.filter((r) => r[1]).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+        ${await filesFor(l.id)}
         <h3>Notes</h3>${await notesFor('lead_id', l.id)}</div>`;
+    }
+
+    // photos and plans the visitor attached (private bucket; links work for an hour)
+    async function filesFor(leadId: string) {
+      const { data: files } = await sb!.storage.from('lead-files').list(leadId, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
+      if (!files?.length) return '';
+      const { data: urls } = await sb!.storage.from('lead-files').createSignedUrls(files.map((f) => `${leadId}/${f.name}`), 3600);
+      return `<h3>Files</h3><div class="row">${(urls || []).map((x, i) => x.signedUrl ? `<a class="pill info" href="${esc(x.signedUrl)}" target="_blank" rel="noopener">${esc(files[i].name)}</a>` : '').join('')}</div>`;
     }
 
     // Jobs ------------------------------------------------------------------

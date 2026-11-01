@@ -31,7 +31,7 @@ alter table public.invoices enable row level security;
 create policy staff_all on public.invoices for all to authenticated using (public.is_staff()) with check (public.is_staff());
 create policy client_read on public.invoices for select to authenticated using (org_id in (select public.my_orgs()));
 
--- Clients see the name of the technician on their jobs
+-- Clients see the technician on their jobs; column grants (explicit_grants) keep the phone private
 create policy client_tech on public.staff for select to authenticated using (
   user_id in (select tech_id from public.jobs where org_id in (select public.my_orgs()))
 );
@@ -54,15 +54,17 @@ create function public.lead_from_qr() returns trigger language plpgsql security 
 declare v uuid;
 begin
   new.system_id := null;
-  if new.source ? 'qr' and (new.source->>'qr') ~ '^[0-9a-f-]{36}$' then
-    select id into v from public.systems where qr = (new.source->>'qr')::uuid;
+  -- a malformed sticker id must never cost the lead: only a well-formed uuid is looked up
+  if new.source ? 'qr' and lower(new.source->>'qr') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    select id into v from public.systems where qr = lower(new.source->>'qr')::uuid;
     new.system_id := v;
   end if;
   return new;
 end $$;
 create trigger leads_qr before insert on public.leads for each row execute function public.lead_from_qr();
 
--- Name of the system behind a sticker, for the report page. Reveals nothing else.
+-- System and building name behind a sticker, for the report page. The building name can be its
+-- street address (convert_lead uses the address when there is no company); nothing else is revealed.
 create function public.qr_label(p_qr uuid) returns text language sql stable security definer set search_path = '' as $$
   select s.name || ' · ' || t.name from public.systems s join public.sites t on t.id = s.site_id where s.qr = p_qr;
 $$;

@@ -5,6 +5,7 @@ import { SERVICES } from '../../data/services';
 import { PLANS, ESTIMATE } from '../../data/plans';
 import { company } from '../../data/company';
 import { u, tel } from '../../lib/url';
+import { FILE_TYPES, MAX_FILES, MAX_FILE_MB, canAttach } from '../../scripts/lead';
 
 const PROJECTS = [
   ['new', 'New installation', 'New construction, gut renovation or a system you do not have yet'],
@@ -89,6 +90,12 @@ const data = {
               <p class="hint full small muted" id="q-reach" style="margin-top:-6px">Email or phone, at least one.</p>
               <div class="field full"><label for="q-addr">Building address</label><input id="q-addr" name="address" type="text" placeholder="Street, city, ZIP" autocomplete="street-address" required></div>
               <div class="field full"><label for="q-notes">Anything else <span class="muted">(optional)</span></label><textarea id="q-notes" name="notes" placeholder="The problem you want solved, existing equipment, access notes"></textarea></div>
+              <div class="field full" hidden={!canAttach}>
+                <label for="q-files">Photos or plans <span class="muted">(optional)</span></label>
+                <input id="q-files" type="file" multiple accept={FILE_TYPES} aria-describedby="q-files-h" data-files>
+                <p class="hint small muted" id="q-files-h">The current panel, door or camera, a floor plan or riser. Up to {MAX_FILES} photos or PDFs, {MAX_FILE_MB} MB each.</p>
+                <ul class="filelist" data-filelist></ul>
+              </div>
             </div>
             <div>
               <p class="lbl-t">Preferred survey window <span class="muted">(optional)</span></p>
@@ -125,6 +132,7 @@ const data = {
         <h2>Thanks, we have it.</h2>
         <p>Your reference number is <span class="ticket-id" data-ref></span></p>
         <p class="note" data-preview hidden><span class="draft">Preview</span><span>This preview does not send requests yet. On the live site this goes straight to the EZTek team.</span></p>
+        <p class="note" data-files-failed hidden></p>
         <ol class="next">
           <li>We call you {company.callback} to confirm the survey time.</li>
           <li>A technician walks the building with you. The survey is free in NYC.</li>
@@ -137,7 +145,7 @@ const data = {
 </Layout>
 
 <script>
-  import { sendLead } from '../../scripts/lead';
+  import { sendLead, MAX_FILES, MAX_FILE_MB, FILE_TYPES } from '../../scripts/lead';
 
   type Est = Record<string, { base: [number, number]; per?: { field: string; range: [number, number] } }>;
   const root = document.getElementById('quote')!;
@@ -170,6 +178,36 @@ const data = {
     }
   }
   const syncSlots = () => slotsBox.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === slot)));
+
+  // attached photos and plans; kept in memory only (files cannot be saved with the draft)
+  let picked: File[] = [];
+  const fileIn = root.querySelector<HTMLInputElement>('[data-files]')!;
+  const fileList = root.querySelector<HTMLElement>('[data-filelist]')!;
+  const kb = (n: number) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.ceil(n / 1e3)} KB`;
+  function syncFiles() {
+    fileList.replaceChildren(...picked.map((f, i) => {
+      const li = document.createElement('li');
+      const name = document.createElement('span'); name.textContent = `${f.name} · ${kb(f.size)}`;
+      const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'link'; rm.textContent = 'Remove';
+      rm.setAttribute('aria-label', `Remove ${f.name}`);
+      rm.addEventListener('click', () => { picked.splice(i, 1); syncFiles(); summary(); });
+      li.append(name, rm); return li;
+    }));
+  }
+  fileIn.addEventListener('change', (e) => {
+    e.stopPropagation(); // the form's change handler would clear the message below
+    const skipped: string[] = [];
+    for (const f of Array.from(fileIn.files || [])) {
+      // images are shrunk before upload, so only PDFs are held to the size limit here
+      const typeOk = FILE_TYPES.split(',').includes(f.type) || /\.(heic|heif)$/i.test(f.name);
+      if (!typeOk || (f.type === 'application/pdf' && f.size > MAX_FILE_MB * 1e6) || f.size > 40e6) skipped.push(f.name);
+      else if (picked.length < MAX_FILES) picked.push(f);
+      else skipped.push(f.name);
+    }
+    fileIn.value = '';
+    err.textContent = skipped.length ? `Not added: ${skipped.join(', ')}. Photos and PDFs only, up to ${MAX_FILES} files, PDFs up to ${MAX_FILE_MB} MB.` : '';
+    syncFiles(); summary();
+  });
 
   const val = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? '';
   const radio = (n: string) => (form.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? '');
@@ -230,6 +268,7 @@ const data = {
       ['Timing', D.times[radio('time')] ?? ''],
       ['Care plan', plan ? D.plans[plan] : ''],
       ['Survey', slot],
+      ['Files', picked.length ? `${picked.length} attached` : ''],
     ];
     const box = root.querySelector<HTMLElement>('[data-sum]')!;
     box.replaceChildren(...rows.filter((r) => r[1] || ['Building', 'Systems'].includes(r[0])).map(([k, v]) => {
@@ -301,9 +340,14 @@ const data = {
       size: ['units', 'floors', 'doors', 'cams'].map((k) => `${k}: ${val(k) || '-'}`).join(', '),
       care_plan: plan ? D.plans[plan] : '', survey_window: slot, estimate: e2 ? `${money(e2[0])}-${money(e2[1])}` : '',
     };
-    const r = await sendLead('quote', 'Quote', 'Q', fields, val('website'));
+    if (picked.length) next.textContent = 'Uploading files…';
+    const r = await sendLead('quote', 'Quote', 'Q', fields, val('website'), {}, picked);
     next.disabled = false; next.textContent = 'Send request';
     if (!r.ok) { err.textContent = 'Could not send. Please call us or try again.'; return; }
+    const ff = root.querySelector<HTMLElement>('[data-files-failed]')!;
+    ff.hidden = !r.filesFailed || r.preview;
+    ff.textContent = r.filesFailed ? `Your request arrived, but ${r.filesFailed === picked.length ? 'the files' : `${r.filesFailed} of ${picked.length} files`} did not upload. Keep them handy for our call or the survey.` : '';
+    picked = []; syncFiles();
     try { localStorage.removeItem(KEY); } catch { /* ignore */ }
     root.querySelector<HTMLElement>('[data-wiz]')!.hidden = true;
     const done = root.querySelector<HTMLElement>('[data-done]')!;
@@ -313,7 +357,7 @@ const data = {
     done.focus();
   });
   root.querySelector('[data-again]')!.addEventListener('click', () => {
-    form.reset(); slot = ''; plan = ''; syncSlots();
+    form.reset(); slot = ''; plan = ''; picked = []; syncSlots(); syncFiles();
     root.querySelector<HTMLElement>('[data-done]')!.hidden = true;
     root.querySelector<HTMLElement>('[data-wiz]')!.hidden = false;
     history.replaceState(null, '', location.pathname);

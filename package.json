@@ -8,6 +8,7 @@
     "preview": "astro preview",
     "check:launch": "node scripts/check-launch.mjs",
     "test:db": "node scripts/test-db.mjs",
+    "assistant:knowledge": "node --experimental-strip-types --no-warnings scripts/assistant-knowledge.mjs",
     "check": "astro check"
   },
   "dependencies": {
