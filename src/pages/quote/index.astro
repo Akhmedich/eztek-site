@@ -282,7 +282,7 @@ const data = {
     est.hidden = !e;
     if (e) {
       root.querySelector('[data-est-v]')!.textContent = `${money(e[0])} – ${money(e[1])}`;
-      root.querySelector('[data-est-s]')!.textContent = (e[2].length ? `Assumes ${e[2].join(', ')}. ` : '') + 'Equipment and labor, before tax. The survey sets the exact price. Draft ranges.';
+      root.querySelector('[data-est-s]')!.textContent = (e[2].length ? `Assumes ${e[2].join(', ')}. ` : '') + 'Equipment and labor, before tax. Typical NYC ranges; the survey sets the exact price.';
     }
     const ul = root.querySelector('[data-units-label]');
     if (ul) ul.textContent = radio('type') === 'residence' ? 'Rooms to cover' : 'Apartments, suites or rooms';
