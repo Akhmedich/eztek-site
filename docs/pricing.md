@@ -47,5 +47,5 @@ Known limit: across water (Staten Island, New Jersey) the straight line is short
 - After-hours coverage add-on ($120/site/mo): no market data found.
 - Everything in `src/data/company.ts` and `src/data/proof.ts` (hours, license, ratings, sample projects): facts about EZTek itself, not researchable.
 
-## Before taking deposits
-New York's home improvement rules (General Business Law, Article 36-A) can require deposits on residential contracts to go into escrow or be bonded. Check with EZTek's lawyer before the proposal step takes deposits from homeowners.
+## Deposits on residential jobs
+New York's home improvement rules (escrow or bond, three business days to cancel, required contract terms) are built into proposals: `docs/home-improvement.md`.
