@@ -430,3 +430,7 @@ verify_jwt = false
 # Website visitors call this with the publishable key for the travel charge; it checks the origin
 [functions.distance]
 verify_jwt = false
+
+# Marketplaces and Zapier/Make send leads without a Supabase session; the INTAKE_SECRET header authorizes them
+[functions.intake]
+verify_jwt = false
