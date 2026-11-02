@@ -1,0 +1,6 @@
+# Same line endings on Windows, Mac and Linux, so a checkout on Windows does not show every file as changed
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
