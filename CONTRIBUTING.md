@@ -7,4 +7,4 @@ New here? Read `docs/team.md` first: access, local setup and the one live databa
 3. One topic per pull request. Describe what changed and how to check it.
 4. Business facts (prices, years, licenses, client names) change only with owner confirmation; link the source in the PR.
 5. Check every page at phone width (about 400 px) and in light and dark mode before asking for review.
-6. The database is live business data. Schema changes go in a new migration file, pass `npm run test:db` and are applied only after the owner's yes (`CLAUDE.md`).
+6. The database is live business data. Schema changes go in a new migration file, pass `npm run test:db` and are applied only after a yes from Akhmed, Mansur or Igor (`CLAUDE.md`).

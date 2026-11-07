@@ -34,8 +34,8 @@ Without settings the forms run in preview mode: nothing is sent, the success scr
 There is no staging database: `eztek-ops` holds real leads, clients and jobs.
 - Read freely; change data only on purpose, one row at a time, never delete rows.
 - Never put the `service_role` key or the database password in `.env`, code or chat.
-- Schema changes: a new file in `supabase/migrations/`, `npm run test:db` passes (in-memory Postgres, no live data), pull request, then the owner says yes and it is applied. Details and the version rule are in `CLAUDE.md`.
-- Edge functions deploy from `main` only, with `verify_jwt` as set in `supabase/config.toml`.
+- Schema changes: a new file in `supabase/migrations/`, `npm run test:db` passes (in-memory Postgres, no live data), pull request, then any one of the three (Akhmed, Mansur, Igor) says yes and it is applied. Details and the version rule are in `CLAUDE.md`.
+- Edge functions deploy from `main` only, with `verify_jwt` as set in `supabase/config.toml`. Any one of the three may approve a deploy.
 
 ## Workflow
 1. Branch from `main`: `feature/<short-name>` or `fix/<short-name>`. Never push to `main`.
