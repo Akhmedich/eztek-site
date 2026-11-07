@@ -13,7 +13,7 @@ The repository is **public**: never commit keys, passwords, personal emails or c
 
 ## Access: everyone signs in as themselves
 Nobody shares a password or a key. Each person gets an invitation to their own email:
-- **GitHub:** owner adds you in Settings > Collaborators (`Add people`). Collaborators of a personal repository can push; the review rule below is what keeps `main` clean.
+- **GitHub:** owner adds you in Settings > Collaborators (`Add people`). Collaborators can push branches; `main` is protected (see Workflow).
 - **Supabase:** owner invites you in the organization's Team page as **Developer** (works with the database and functions, cannot delete the project). The invitation expires after 24 hours.
 - **Staff dashboard `/admin/`:** open https://akhmedich.github.io/eztek-site/admin/, sign in with the email link once, then ask the owner (or Claude, on the owner's word) to add you to `staff`.
 - **Service keys** (Stripe, Anthropic, Web3Forms) live in Supabase Edge Function secrets and GitHub Actions variables. The functions and the site read them from there; nobody copies them by hand.
@@ -28,7 +28,7 @@ npm run dev          # http://localhost:4321/eztek-site/
 ```
 Line endings are LF everywhere (`.gitattributes`), so a Windows checkout does not show every file as changed.
 
-Without settings the forms run in preview mode: nothing is sent, the success screen says so. That is the safe default for local work, because there is one database and it is live (see below). To try `/admin/` or the portal locally, copy `.env.example` to `.env` and fill in the publishable key from Supabase > Project Settings > API Keys. Sign-in links return to the redirect URLs set in Supabase > Authentication > URL Configuration; the owner adds `http://localhost:4321/eztek-site/admin/` there once if local sign-in is needed.
+Without settings the forms run in preview mode: nothing is sent, the success screen says so. That is the safe default for local work, because there is one database and it is live (see below). To try `/admin/` or the portal locally, copy `.env.example` to `.env` and fill in the publishable key from Supabase > Project Settings > API Keys. Sign-in links return to the redirect URLs set in Supabase > Authentication > URL Configuration; `http://localhost:4321/eztek-site/admin/` is already on that list.
 
 ## One live database
 There is no staging database: `eztek-ops` holds real leads, clients and jobs.
@@ -40,7 +40,7 @@ There is no staging database: `eztek-ops` holds real leads, clients and jobs.
 ## Workflow
 1. Branch from `main`: `feature/<short-name>` or `fix/<short-name>`. Never push to `main`.
 2. Before the pull request: `npm run check`, `npm run test:db`, `npm run build`; look at changed pages at about 400 px wide, light and dark.
-3. Pull request into `main`, one topic, what changed and how to check it. Another person reviews before merge.
+3. Pull request into `main`, one topic, what changed and how to check it. GitHub requires the pull request and a passing `build` check for everyone, the owner too, but no approval, so you can merge your own. Another person looks it over when they can; ask for that on anything risky (schema, billing, sign-in).
 4. Business facts (prices, licenses, client names) change only with the owner's confirmation (`CONTRIBUTING.md`).
 
 ## Claude Code

@@ -3,7 +3,7 @@
 New here? Read `docs/team.md` first: access, local setup and the one live database.
 
 1. Do not push to `main`. Create a branch: `feature/<short-name>` or `fix/<short-name>`.
-2. Open a pull request into `main`. At least one other person reviews it before merge.
+2. Open a pull request into `main`. GitHub requires a passing `build` check, not an approval; another person reviews it when they can, and always on anything risky (schema, billing, sign-in).
 3. One topic per pull request. Describe what changed and how to check it.
 4. Business facts (prices, years, licenses, client names) change only with owner confirmation; link the source in the PR.
 5. Check every page at phone width (about 400 px) and in light and dark mode before asking for review.
