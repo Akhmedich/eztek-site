@@ -63,7 +63,7 @@ Access rules (tested by `npm run test:db`, 142 cases, with automatic table expos
 ## One-time setup (owner, about 15 minutes)
 Claude cannot create accounts or handle keys, so these steps are yours.
 
-1. **Supabase project.** Go to supabase.com, sign in with GitHub, organization `Eztek` (type Company, plan Free), project `eztek-ops`, region Americas (East US). Save the database password in your password manager. Security settings:
+1. **Supabase project.** Go to supabase.com, sign in with GitHub, organization `Eztek` (type Company, plan Free), project `eztek-ops` (created in West US (Oregon), `us-west-2`). Save the database password in your password manager. Security settings:
    - Enable Data API: **on** (the site, dashboard and portal use it).
    - Automatically expose new tables: **off**. Access is granted table by table in `supabase/migrations/20261031190000_explicit_grants.sql`; nothing else is reachable.
    - Enable automatic RLS: **on** (a safety net; every table already has row level security).

@@ -47,6 +47,9 @@ Each lead goes to the `leads` table in Supabase and, as a copy, by email to mans
 The preview must not be indexed until the owner approves launch: `noindex` meta tag on every page while `PREVIEW` is true. `public/_headers` (X-Robots-Tag) applies only on Cloudflare Pages.
 
 ## Team
-- Akhmed Bektimirov: admin
-- Mansur (mansur@eztek.us): admin
-- Claude: works through the admin's account in Claude sessions; no separate GitHub account
+- Akhmed Bektimirov: owner, admin
+- Mansur (mansur@eztek.us): admin, developer
+- Igor (GitHub `igorvaschuk`): developer
+- Claude: works through each person's own accounts in their Claude sessions; no separate GitHub account
+
+New developers: start with `docs/team.md` (access, local setup, the one live database, workflow).
